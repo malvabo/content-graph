@@ -47,7 +47,7 @@ struct RecordingWaveformView: View {
                 let cy = size.height / 2
                 let sphereR = min(cx, cy) - 3
 
-                let driftTime = t * (0.78 + audio * 0.22)
+                let driftTime = t * (1.0 + audio * 0.45)
 
                 for i in 0..<starCount {
                     let n = Double(i) + 0.5
@@ -58,15 +58,15 @@ struct RecordingWaveformView: View {
                     let seedB = prng(i * 19 + 7) * Double.pi * 2
                     let seedC = prng(i * 23 + 11) * Double.pi * 2
 
-                    let individualLift = 1.0 + audio * 0.32
+                    let individualLift = 1.0 + audio * 0.50
                     let thetaDrift = individualParticleMotion
-                        ? sin(driftTime * (0.18 + prng(i * 29) * 0.08) * individualLift + seedA) * 0.085
+                        ? sin(driftTime * (0.34 + prng(i * 29) * 0.16) * individualLift + seedA) * 0.18
                         : 0
                     let phiDrift = individualParticleMotion
-                        ? sin(driftTime * (0.14 + prng(i * 31) * 0.07) * individualLift + seedB) * 0.052
+                        ? sin(driftTime * (0.26 + prng(i * 31) * 0.13) * individualLift + seedB) * 0.11
                         : 0
                     let radialDrift = individualParticleMotion
-                        ? sin(driftTime * (0.11 + prng(i * 37) * 0.06) * individualLift + seedC) * 0.028
+                        ? sin(driftTime * (0.20 + prng(i * 37) * 0.10) * individualLift + seedC) * 0.055
                         : sin(t * 0.08 + Double(i) * 0.23) * (0.002 + audio * 0.004)
 
                     let phi = max(0.04, min(Double.pi - 0.04, basePhi + phiDrift))
