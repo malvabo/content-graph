@@ -467,82 +467,36 @@ struct OnboardingView: View {
     /// central cloud becomes the full-screen press-and-hold surface, then
     /// dims behind recording and choose states so the visual thread stays
     /// continuous instead of swapping to a separate background.
-    /// The single recording screen for both onboarding recording phases
-    /// (.recording and .specify). Renders the shared ActiveRecordingPageView —
-    /// the same component the home Voice Note screen uses — so onboarding and
-    /// home cannot diverge. Amber glow is off here to suit the dark capture scene.
-    @ViewBuilder
-    private func captureRecordingPage(title: String,
-                                      timeLabel: String,
-                                      onFinish: @escaping () -> Void) -> some View {
-        ActiveRecordingPageView(audioLevel: { captureRecorder.audioLevel },
-                                timeLabel: timeLabel,
-                                showsAmberGlow: false,
-                                title: {
-            Text(title)
-                .font(.lora(size: 22, weight: .medium))
-                .kerning(-0.3)
-                .foregroundColor(AppText.primary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-        }, bottom: {
-            Button(action: onFinish) {
-                Text("Finish recording")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            }
-            .buttonStyle(.plain)
-        })
-        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-    }
-
     @ViewBuilder private var captureOverlay: some View {
-        Group {
-            switch capturePhase {
-            case .recording:
-                captureRecordingPage(title: "Let's capture\nyour first idea",
-                                     timeLabel: formatCaptureTime(recordingSeconds),
-                                     onFinish: finishCaptureRecording)
-            case .specify:
-                captureRecordingPage(title: "What do you want to\u{2026}?",
-                                     timeLabel: formatCaptureTime(specifySeconds),
-                                     onFinish: finishSpecifyRecording)
-            default:
-                VStack(spacing: 0) {
-                    Spacer().frame(height: 24)
+        VStack(spacing: 0) {
+            Spacer().frame(height: 24)
 
-                    captureHeadline
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.black.opacity(0.40))
-                                .blur(radius: 20)
-                        )
-                        .padding(.horizontal, 28)
-                        .padding(.top, 12)
+            captureHeadline
+                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.black.opacity(0.40))
+                        .blur(radius: 20)
+                )
+                .padding(.horizontal, 28)
+                .padding(.top, 12)
 
-                    Spacer(minLength: 24)
+            Spacer(minLength: 24)
 
-                    captureCenter
-                        // Reserve the waveform circle height even during .prompt
-                        // so the layout doesn't reflow (and shift all surrounding
-                        // elements) when the waveform fades in on recording start.
-                        .frame(minHeight: UIScreen.main.bounds.width * 2 / 3)
-                        .padding(.horizontal, 24)
+            captureCenter
+                // Reserve the waveform circle height even during .prompt
+                // so the layout doesn't reflow (and shift all surrounding
+                // elements) when the waveform fades in on recording start.
+                .frame(minHeight: UIScreen.main.bounds.width * 2 / 3)
+                .padding(.horizontal, 24)
 
-                    Spacer(minLength: 24)
+            Spacer(minLength: 24)
 
-                    captureBottom
-                        .padding(.horizontal, 28)
+            captureBottom
+                .padding(.horizontal, 28)
 
-                    Spacer().frame(height: 52)
-                }
-            }
+            Spacer().frame(height: 52)
         }
         // During .prompt the entire overlay is decorative — the only
         // interactive element is the full-screen cloud behind
@@ -551,7 +505,7 @@ struct OnboardingView: View {
         // `Color.clear` placeholder would each carve a strip of the
         // screen where the long-press silently fails to fire.
         .allowsHitTesting(capturePhase != .prompt)
-        .animation(.easeOut(duration: 0.14), value: capturePhase)
+        .animation(.easeInOut(duration: 0.32), value: capturePhase)
         // Enter with the transformed cloud so the prompt and background land
         // as one composed scene after Continue.
         // Exit: not actually used today (.capture is terminal in
@@ -700,9 +654,9 @@ struct OnboardingView: View {
             // Circle appears immediately as the background field dims; the
             // short settle avoids a visible blank beat after touch-down.
             .transition(.asymmetric(
-                insertion: .scale(scale: 1.025)
+                insertion: .scale(scale: 0.96)
                     .combined(with: .opacity)
-                    .animation(.easeOut(duration: 0.16)),
+                    .animation(.easeOut(duration: 0.32)),
                 removal: .opacity
             ))
 
@@ -778,7 +732,8 @@ struct OnboardingView: View {
                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .buttonStyle(.plain)
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            .transition(.opacity.combined(with: .move(edge: .bottom))
+                .animation(.easeOut(duration: 0.28).delay(0.08)))
         case .choose:
             Color.clear.frame(height: 54)
         case .specify:
