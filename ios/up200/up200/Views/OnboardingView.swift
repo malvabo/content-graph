@@ -193,9 +193,9 @@ struct OnboardingView: View {
 
     private var captureCloudVisible: Bool {
         switch capturePhase {
-        case .prompt, .choose:
+        case .prompt, .recording, .choose, .specify:
             true
-        case .recording, .specify, .generating:
+        case .generating:
             false
         }
     }
@@ -204,9 +204,13 @@ struct OnboardingView: View {
         switch capturePhase {
         case .prompt:
             1.0
+        case .recording, .specify:
+            // Keep a faint field during the handoff into the center circle so
+            // the tap-to-record transition never drops to a blank frame.
+            0.18
         case .choose:
             0.56
-        case .recording, .specify, .generating:
+        case .generating:
             0
         }
     }
@@ -658,9 +662,8 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
                     .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.09))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
-                    .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
 
                 HStack(spacing: 8) {
                     Circle()
@@ -692,9 +695,8 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
                     .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.09))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
-                    .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
 
                 HStack(spacing: 8) {
                     Circle()
