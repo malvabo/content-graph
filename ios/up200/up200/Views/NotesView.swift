@@ -682,7 +682,7 @@ struct NoteVoiceSheet: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
 
-            Spacer(minLength: 28)
+            Spacer(minLength: 40)
 
             let waveSize = UIScreen.main.bounds.width * 2 / 3
             VStack(spacing: 18) {
@@ -744,12 +744,7 @@ struct NoteVoiceSheet: View {
                 .accessibilityLabel(recording.isPaused ? "Resume recording" : "Pause recording")
             }
 
-            // Live transcript preview
-            transcriptPreview
-                .padding(.top, 24)
-                .padding(.bottom, 8)
-
-            Spacer(minLength: 16)
+            Spacer(minLength: 24)
 
             if let err = recording.startupError {
                 Text(err)
@@ -777,40 +772,6 @@ struct NoteVoiceSheet: View {
             .buttonStyle(.plain)
             .padding(.horizontal, 28)
             .padding(.bottom, 34)
-        }
-    }
-
-    @ViewBuilder
-    private var transcriptPreview: some View {
-        let trimmed = recording.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            Text("Listening\u{2026}")
-                .font(.system(size: 14, weight: .regular))
-                .foregroundColor(Color.white.opacity(0.18))
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal, 28)
-        } else {
-            ScrollView(.vertical, showsIndicators: false) {
-                Text(trimmed)
-                    .font(.system(size: 15, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.48))
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 4)
-            }
-            .frame(maxHeight: 100)
-            .mask(
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .black, location: 0.12),
-                        .init(color: .black, location: 0.82),
-                        .init(color: .clear, location: 1),
-                    ],
-                    startPoint: .top, endPoint: .bottom
-                )
-            )
         }
     }
 
