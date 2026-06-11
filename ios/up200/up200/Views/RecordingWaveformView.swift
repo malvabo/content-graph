@@ -2,8 +2,9 @@ import SwiftUI
 
 // MARK: - Shared recording waveform
 
-/// Full-circle starfield of white glowing particles. Audio level gently scales
-/// radius and brightness; active particles warm toward amber when speaking.
+/// Full-circle starfield. Each particle has its own slow glow cycle; audio
+/// gives particles permission to ignite during their natural upswing, producing
+/// a rolling, organic bloom rather than a simultaneous flash.
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
 
@@ -12,47 +13,53 @@ struct RecordingWaveformView: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
-            let level = audioLevel()
+            // Soft audio presence: gentle lift so quiet rooms show nothing,
+            // normal speech lands around 0.6–0.8.
+            let audio = min(1.0, Double(audioLevel()) * 2.4)
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
                 let maxR = min(cx, cy)
 
                 for i in 0..<starCount {
-                    // Distribute particles in a circle rather than a square so
-                    // no particle drifts across the clip boundary and flickers.
-                    // Polar coordinates with sqrt-radius give uniform area density.
-                    let angle = prng(i * 3) * 2 * .pi
-                    let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 20)
-                    let ra = prng(i * 3 + 2)
-                    // Per-particle threshold prevents all 160 stars firing
-                    // simultaneously — denser stars react first, sparse ones later.
-                    let amplified = min(1.0, max(0.0, Double(level) - (0.004 + ra * 0.016)) * 18.0)
+                    let angle = prng(i * 3    ) * 2 * .pi
+                    let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 18)
+                    let ra    = prng(i * 3 + 2)
 
-                    let phase = t * 0.38 + Double(i) * 0.41
-                    let dx = sin(phase) * 13.0
-                    let dy = cos(phase * 1.27) * 9.0
+                    // Drift speed rises subtly when speaking (+35% at full audio)
+                    let speed = 0.22 + audio * 0.08
+                    let phase = t * speed + Double(i) * 0.41
+                    let x = cx + baseR * cos(angle) + sin(phase)        * 11.0
+                    let y = cy + baseR * sin(angle) + cos(phase * 1.27) *  8.0
 
-                    let x = cx + baseR * cos(angle) + dx
-                    let y = cy + baseR * sin(angle) + dy
+                    // Per-particle glow cycle — slow (3–8 s period), staggered
+                    // so no two particles sync. glow is zero half the time,
+                    // creating natural gaps between ignitions.
+                    let glowHz    = 0.12 + prng(i * 7 + 3) * 0.18   // 0.12–0.30 Hz
+                    let glow      = max(0.0, sin(t * glowHz + Double(i) * 1.73))
 
-                    let pulse = 0.75 + 0.25 * sin(t * 1.6 + Double(i) * 0.31)
-                    let radius = (2.0 + ra * 3.2) * (1.0 + amplified * 0.45)
+                    // Ignition = glow opportunity × audio × particle sensitivity.
+                    // All three must be nonzero; sensitivity variance (0.4–2.4)
+                    // means some particles respond to a whisper, others need
+                    // louder speech — an organic, staggered lighting pattern.
+                    let sensitivity = 0.4 + prng(i * 5 + 1) * 2.0
+                    let ignition    = min(1.0, glow * audio * sensitivity)
 
-                    let alpha = min(1.0, (0.55 + ra * 0.45) * pulse * (1.0 + amplified * 0.35))
+                    // Alpha: dim at rest (distant stars), selected ones bloom
+                    let alpha  = min(0.80, (0.12 + ra * 0.16) + ignition * 0.56)
 
-                    // Particles warm from white toward soft amber as audio level rises
-                    let warmth = amplified * 0.55
-                    let particleColor = Color(
-                        red: 1.0,
-                        green: 1.0 - warmth * 0.28,
-                        blue: 1.0 - warmth * 0.60
-                    ).opacity(alpha)
+                    // Size: gentle bloom — 20% growth at full ignition
+                    let radius = (1.4 + ra * 2.4) * (1.0 + ignition * 0.20)
 
+                    // Color: pure white. Barely-perceptible warmth (< 2%) only
+                    // at peak ignition — adds depth without an orange cast.
+                    let w = ignition * 0.08
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
                                                width: radius * 2, height: radius * 2)),
-                        with: .color(particleColor)
+                        with: .color(Color(red: 1.0,
+                                          green: 1.0 - w * 0.20,
+                                          blue:  1.0 - w * 0.50).opacity(alpha))
                     )
                 }
             }
