@@ -22,7 +22,7 @@ struct RecordingWaveformView: View {
                 let cx = size.width / 2
                 let cy = size.height / 2
                 let sphereR = min(cx, cy) - 18
-                let rotation = t * 0.012
+                let rotation = t * 0.017
 
                 for i in 0..<starCount {
                     let n = Double(i) + 0.5
@@ -42,7 +42,7 @@ struct RecordingWaveformView: View {
 
                     let sensitivity = 0.75 + prng(i * 5 + 1) * 0.75
                     let audioLift = min(1.0, audio * sensitivity)
-                    let alpha = min(0.82, (0.10 + prng(i * 7) * 0.18) * perspective + audioLift * 0.42)
+                    let alpha = min(0.90, (0.16 + prng(i * 7) * 0.22) * perspective + audioLift * 0.50)
                     let radius = (1.20 + prng(i * 11) * 2.20) * perspective
 
                     ctx.fill(
