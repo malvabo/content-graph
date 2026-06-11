@@ -21,21 +21,23 @@ struct RecordingWaveformView: View {
                 let maxR = min(cx, cy)
 
                 for i in 0..<starCount {
-                    let angle = prng(i * 3    ) * 2 * .pi
+                    let baseAngle = prng(i * 3    ) * 2 * .pi
                     let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 18)
                     let ra    = prng(i * 3 + 2)
 
-                    let speed = 0.07 + audio * 0.08
-                    let phase = t * speed + Double(i) * 0.41
-                    let drift = 1.6 + audio * 1.15
-                    let radialBreath = sin(t * (0.10 + ra * 0.045) + Double(i) * 0.23) * (0.55 + audio * 0.45)
+                    let direction = prng(i * 11 + 9) > 0.5 ? 1.0 : -1.0
+                    let orbitSpeed = (0.010 + ra * 0.010 + audio * 0.010) * direction
+                    let angle = baseAngle + t * orbitSpeed
+                    let phase = t * (0.055 + ra * 0.025 + audio * 0.020) + Double(i) * 0.41
+                    let radialBreath = sin(phase) * (0.75 + audio * 0.35)
                     let r = baseR + radialBreath
-                    let x = cx + r * cos(angle) + sin(phase) * drift
-                    let y = cy + r * sin(angle) + cos(phase * 1.19) * drift * 0.78
+                    let drift = 0.65 + audio * 0.45
+                    let x = cx + r * cos(angle) + sin(phase * 0.9) * drift
+                    let y = cy + r * sin(angle) + cos(phase * 1.1) * drift
 
                     let sensitivity = 0.65 + prng(i * 5 + 1) * 1.05
                     let audioLift = min(1.0, audio * sensitivity)
-                    let alpha = min(0.88, (0.12 + ra * 0.14) + audioLift * 0.46)
+                    let alpha = min(0.86, (0.11 + ra * 0.13) + audioLift * 0.50)
                     let radius = 1.35 + ra * 2.15
 
                     ctx.fill(
