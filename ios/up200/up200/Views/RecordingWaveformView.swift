@@ -134,3 +134,70 @@ struct RecordingCloudView: View {
         }
     }
 }
+
+struct ActiveRecordingPageView<Title: View, Bottom: View>: View {
+    let audioLevel: () -> Float
+    let timeLabel: String
+    let showsAmberGlow: Bool
+    let title: () -> Title
+    let close: (() -> Void)?
+    let bottom: () -> Bottom
+
+    init(audioLevel: @escaping () -> Float,
+         timeLabel: String,
+         showsAmberGlow: Bool = true,
+         @ViewBuilder title: @escaping () -> Title,
+         close: (() -> Void)? = nil,
+         @ViewBuilder bottom: @escaping () -> Bottom) {
+        self.audioLevel = audioLevel
+        self.timeLabel = timeLabel
+        self.showsAmberGlow = showsAmberGlow
+        self.title = title
+        self.close = close
+        self.bottom = bottom
+    }
+
+    var body: some View {
+        ZStack {
+            AppBackground.primary.ignoresSafeArea()
+            RadialGradient(
+                colors: [BrandColor.amber.opacity(showsAmberGlow ? 0.16 : 0.0), .clear],
+                center: .center, startRadius: 0, endRadius: 300
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    title()
+                    Spacer()
+                    if let close {
+                        Button(action: close) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(AppText.secondary)
+                                .frame(width: 44, height: 44)
+                                .background(AppInk.solid(0.12))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+
+                Spacer(minLength: 24)
+
+                RecordingCloudView(audioLevel: audioLevel, timeLabel: timeLabel)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+
+                Spacer(minLength: 24)
+                Spacer(minLength: 24)
+
+                bottom()
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+            }
+        }
+    }
+}

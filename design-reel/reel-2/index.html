@@ -903,7 +903,7 @@
       <!-- ══════════════════════════════════════════
            S-MDW · Statement card · "Make design feel like magic" (11–13.5s)
       ══════════════════════════════════════════ -->
-      <div class="scene clip" id="s-mdw" data-start="8.846" data-duration="1.1" data-track-index="0" style="z-index:44;background:#fff;">
+      <div class="scene clip" id="s-mdw" data-start="8.846" data-duration="1.577" data-track-index="0" style="z-index:44;background:#fff;">
         <img class="mdw-bg" src="assets/clouds-bg.jpg" alt="">
         <div class="mdw-veil"></div>
         <div id="mdw-text"><span id="mdw-base">Make design feel like</span><span id="mw-magic">magic.</span></div>
@@ -1154,7 +1154,7 @@
            S10 · Upright hero close · Drift to black (41–45s)
            Non-anchor, final — exit ok
       ══════════════════════════════════════════ -->
-      <div class="scene clip" id="s10" data-start="9.946" data-duration="5.823" data-track-index="0">
+      <div class="scene clip" id="s10" data-start="10.423" data-duration="5.347" data-track-index="0">
         <img src="assets/starry-night-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 46%;z-index:0;">
         <div style="position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(0,0,0,0.22);"></div>
         <div class="grain"></div>
@@ -1168,7 +1168,7 @@
           <div id="s10-pw">
             <div class="phone">
               <div class="phone-notch"></div>
-              <video id="v-s10" src="assets/mobile-01.mov" data-start="9.946" data-duration="11.208" data-track-index="26" muted playsinline></video>
+              <video id="v-s10" src="assets/mobile-01.mov" data-start="10.423" data-duration="10.731" data-track-index="26" muted playsinline></video>
             </div>
           </div>
         </div>
@@ -1286,9 +1286,9 @@
       gsap.set("#mw-magic", { autoAlpha: 0, letterSpacing: "0px" });
       tl.to("#mdw-base", { x: 0, clipPath: "inset(0 0% 0 0)", duration: 0.423, ease: "power3.out" }, 8.846);
       tl.set("#mw-magic", { autoAlpha: 1, letterSpacing: "0px" }, 9.293);
-      tl.to("#mw-magic", { letterSpacing: "25px", autoAlpha: 0, duration: 0.654, ease: "power1.in" }, 9.293);
-      tl.set("#mw-magic", { autoAlpha: 0 }, 9.946);
-      tl.set("#s-mdw", { autoAlpha: 0 }, 9.946);
+      tl.to("#mw-magic", { letterSpacing: "25px", autoAlpha: 0, duration: 0.94, ease: "power1.in" }, 9.293);
+      tl.set("#mw-magic", { autoAlpha: 0 }, 10.423);
+      tl.set("#s-mdw", { autoAlpha: 0 }, 10.423);
 
       // Own centering via GSAP (avoids CSS/GSAP transform conflict)
       gsap.set("#s7-grid", { xPercent: -50, yPercent: -50 });
@@ -1319,8 +1319,8 @@
       tl.set("#s1",  { autoAlpha: 0 }, 28.808);
       tl.set("#s1b", { autoAlpha: 1 }, 6.923);
       tl.set("#s1b", { autoAlpha: 0 }, 8.846);
-      tl.set("#s-mdw", { autoAlpha: 0 }, 9.946);
-      tl.set("#s10", { autoAlpha: 1 }, 9.946);
+      tl.set("#s-mdw", { autoAlpha: 0 }, 10.423);
+      tl.set("#s10", { autoAlpha: 1 }, 10.423);
       tl.set("#s10", { autoAlpha: 0 }, 15.77);
       // S2 starts only after the S10 hero is gone, avoiding a double-device overlap.
       tl.set("#s2",  { autoAlpha: 1 }, 15.77);
@@ -1505,9 +1505,9 @@
       // ════════════════════════════════════════
       // S10 (6–10s) · hero · emerges from black
       // ════════════════════════════════════════
-      tl.from("#s10-pw",  { scale: 0.88, autoAlpha: 0, duration: 0.692, ease: "expo.out" }, 9.946);
-      tl.to("#s10-glow",  { scale: 1.3, duration: 1.692, ease: "power1.out" }, 9.985);
-      tl.to("#s10-pw",    { y: -20, duration: 1.923, ease: "power1.inOut" }, 10.331);
+      tl.from("#s10-pw",  { scale: 0.88, autoAlpha: 0, duration: 0.692, ease: "expo.out" }, 10.423);
+      tl.to("#s10-glow",  { scale: 1.3, duration: 1.692, ease: "power1.out" }, 10.462);
+      tl.to("#s10-pw",    { y: -20, duration: 1.923, ease: "power1.inOut" }, 10.808);
       tl.to("#s10-glow",  { autoAlpha: 0, duration: 0.308, ease: "power2.in" }, 14.177);
       tl.to("#s10-pw",    { x: -577, y: 0, duration: 0.769, ease: "power2.inOut" }, 14.177);
 

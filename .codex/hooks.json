@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__github__create_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/maryborysova/content-graph/.codex/hooks/post-pr-noise-suppress.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -167,16 +167,6 @@ struct OnboardingView: View {
                     .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
-            if step == .capture && capturePhase == .recording {
-                AppBackground.primary.ignoresSafeArea()
-                RadialGradient(
-                    colors: [BrandColor.amber.opacity(0.16), .clear],
-                    center: .center, startRadius: 0, endRadius: 300
-                )
-                .ignoresSafeArea()
-                .transition(.opacity)
-            }
-
             switch step {
             case .intro:         introOverlay
             case .constellation: constellationOverlay
@@ -477,8 +467,32 @@ struct OnboardingView: View {
     /// central cloud becomes the full-screen press-and-hold surface, then
     /// dims behind recording and choose states so the visual thread stays
     /// continuous instead of swapping to a separate background.
-    private var captureOverlay: some View {
-        VStack(spacing: 0) {
+    @ViewBuilder private var captureOverlay: some View {
+        if capturePhase == .recording {
+            ActiveRecordingPageView(audioLevel: { captureRecorder.audioLevel },
+                                    timeLabel: formatCaptureTime(recordingSeconds),
+                                    title: {
+                Text("Let's capture\nyour first idea")
+                    .font(.lora(size: 22, weight: .medium))
+                    .kerning(-0.3)
+                    .foregroundColor(AppText.primary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+            }, bottom: {
+                Button(action: finishCaptureRecording) {
+                    Text("Finish recording")
+                        .font(.app(size: 17, weight: .semibold))
+                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.white.opacity(0.94))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            })
+            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+        } else {
+            VStack(spacing: 0) {
             Spacer().frame(height: 24)
 
             captureHeadline
@@ -507,7 +521,7 @@ struct OnboardingView: View {
                 .padding(.horizontal, 28)
 
             Spacer().frame(height: 52)
-        }
+            }
         // During .prompt the entire overlay is decorative — the only
         // interactive element is the full-screen cloud behind
         // it, which owns the press-and-hold gesture. Without this
@@ -590,6 +604,7 @@ struct OnboardingView: View {
         // produced. When they dismiss it, fall through to onGetStarted so
         // onboarding exits: they've now seen both the create flow and the
         // notes-and-generations surface they'll live in.
+        }
     }
 
     @ViewBuilder private var captureHeadline: some View {

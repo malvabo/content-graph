@@ -1429,7 +1429,11 @@ struct VoiceRecordSheet: View {
     }
 
     var body: some View {
-        ZStack {
+        Group {
+            if recorder.isRecording {
+                activeRecordingPage
+            } else {
+                ZStack {
             AppBackground.primary.ignoresSafeArea()
             RadialGradient(
                 colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
@@ -1616,6 +1620,8 @@ struct VoiceRecordSheet: View {
                     Color.clear.frame(height: 96)
                 }
             }
+                }
+            }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recorder.isRecording)
         .animation(.easeOut(duration: 0.2), value: isGenerating)
@@ -1642,6 +1648,90 @@ struct VoiceRecordSheet: View {
             Text("Microphone and speech recognition access is required to record a voice note.")
         }
         .interactiveDismissDisabled(recorder.isRecording || !recorder.transcript.isEmpty || isGenerating)
+    }
+
+    private var activeRecordingPage: some View {
+        ActiveRecordingPageView(audioLevel: { recorder.audioLevel },
+                                timeLabel: timeLabel,
+                                title: {
+            Text("Recording…")
+                .font(.subheadline)
+                .foregroundColor(AppText.tertiary)
+        }, close: {
+            guard !isGenerating else { return }
+            recorder.stop()
+            dismiss()
+        }, bottom: {
+            recordingControls
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        })
+        .disabled(isGenerating)
+    }
+
+    private var recordingControls: some View {
+        VStack(spacing: 10) {
+            if let switchToWriting = onSwitchToWriting {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    recorder.stop()
+                    dismiss()
+                    switchToWriting()
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Switch to writing")
+                            .font(.app(size: 15, weight: .medium))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(Color.white.opacity(0.78))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: 12) {
+                Button(action: handleMicTap) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "pause.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("Pause")
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(minWidth: 60)
+                    }
+                    .foregroundColor(AppText.primary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(AppInk.solid(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                Button(action: handleDone) {
+                    HStack(spacing: 6) {
+                        Text("End")
+                            .font(.app(size: 15, weight: .medium))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(Color.white.opacity(0.78))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.pill, style: .continuous)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private func handleMicTap() {
