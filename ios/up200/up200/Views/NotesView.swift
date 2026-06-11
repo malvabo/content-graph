@@ -741,7 +741,7 @@ struct NoteVoiceSheet: View {
             switchToWriting()
         } label: {
             Text("Switch to writing")
-                .font(.app(size: 15, weight: .medium))
+                .font(.app(size: 17, weight: .medium))
                 .foregroundColor(Color.white.opacity(0.52))
                 .padding(.horizontal, 18)
                 .padding(.vertical, 10)
