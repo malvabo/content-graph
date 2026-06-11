@@ -195,7 +195,7 @@ struct OnboardingView: View {
         case .prompt:
             0.65
         case .recording, .specify:
-            0.60
+            0.12
         case .choose:
             0.56
         case .generating:
