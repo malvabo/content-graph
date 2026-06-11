@@ -1387,103 +1387,121 @@ private struct GeneratingCloudScene: View {
 
     var body: some View {
         ZStack {
-            TimelineView(.animation(minimumInterval: showsContentGraph ? 1.0 / 30.0 : 1.0 / 10.0)) { context in
-                let now = frozenAt ?? context.date
-                let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
+            if showsContentGraph {
                 Canvas { ctx, size in
                     let cx = size.width / 2
                     let cy = size.height / 2
-
                     let coreRadius = min(size.width, size.height) * 0.20
 
-                    // The constellation beat keeps the central cloud visually
-                    // stable while satellites form. Capture-background mode
-                    // gets a barely-there drift so the enlarged cloud feels
-                    // environmental, not like a frozen overlay.
-                    let backgroundDrift = showsContentGraph ? 0 : elapsed
-                    let backgroundBreath = showsContentGraph
-                        ? 1.0
-                        : 0.97 + 0.03 * sin(elapsed * 0.55)
                     drawSphere(in: ctx,
                                cx: cx,
                                cy: cy,
-                               r: coreRadius * backgroundBreath,
-                               t: backgroundDrift,
+                               r: coreRadius,
+                               t: 0,
                                count: centralStarCount,
                                sizeScale: 1.0,
-                               rotationSpeed: showsContentGraph ? 0 : 0.025)
+                               rotationSpeed: 0)
+                }
 
-                    guard showsContentGraph else { return }
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+                    let now = frozenAt ?? context.date
+                    let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
+                    Canvas { ctx, size in
+                        drawSatellites(in: ctx, size: size, elapsed: elapsed)
+                    }
+                }
+            } else {
+                TimelineView(.animation(minimumInterval: 1.0 / 10.0)) { context in
+                    let now = frozenAt ?? context.date
+                    let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
+                    Canvas { ctx, size in
+                        let cx = size.width / 2
+                        let cy = size.height / 2
+                        let coreRadius = min(size.width, size.height) * 0.20
+                        let backgroundBreath = 0.97 + 0.03 * sin(elapsed * 0.55)
 
-                    for (i, sat) in satellites.enumerated() {
-                        let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
-                        guard progress > 0 else { continue }
-                        let eased = smoothstep(progress)
-
-                        // Distance to screen edge in this satellite's direction,
-                        // then travel edgeFraction of that — fills all four
-                        // screen quadrants regardless of device aspect ratio.
-                        let ca = abs(cos(sat.angle)), sa = abs(sin(sat.angle))
-                        let distToEdge = ca < 1e-9 ? cy
-                                       : sa < 1e-9 ? cx
-                                       : min(cx / ca, cy / sa)
-                        let satDistance = distToEdge * sat.edgeFraction
-                        let satX = cx + cos(sat.angle) * satDistance * eased
-                        let satY = cy + sin(sat.angle) * satDistance * eased
-
-                        // Connector links the central cloud to the peripheral
-                        // cloud while keeping clear of the central dot mass.
-                        if progress > connectorStartProgress {
-                            let lineAlpha = smoothstep((progress - connectorStartProgress) / (1 - connectorStartProgress))
-                            let startX = cx + cos(sat.angle) * coreRadius * 1.22
-                            let startY = cy + sin(sat.angle) * coreRadius * 1.22
-                            let satEdge = coreRadius * sat.sizeFactor * 0.9
-                            let endX = satX - cos(sat.angle) * satEdge
-                            let endY = satY - sin(sat.angle) * satEdge
-                            var line = Path()
-                            line.move(to: CGPoint(x: startX, y: startY))
-                            line.addLine(to: CGPoint(x: endX, y: endY))
-                            ctx.stroke(
-                                line,
-                                with: .color(amber.opacity(0.24 * lineAlpha)),
-                                style: StrokeStyle(
-                                    lineWidth: 1.35,
-                                    lineCap: .round,
-                                    dash: [0.01, 4]
-                                )
-                            )
-                        }
-
-                        // Peripheral clouds keep the earlier growing behavior;
-                        // central cloud stability is handled by rendering it
-                        // as a separate static layer.
-                        if progress > satelliteBloomStartProgress {
-                            let bloom = smoothstep((progress - satelliteBloomStartProgress) / (1 - satelliteBloomStartProgress))
-                            let bloomFade = min(1.0, bloom / 0.25)
-                            drawSphere(in: ctx,
-                                       cx: satX, cy: satY,
-                                       r: coreRadius * sat.sizeFactor * bloom,
-                                       t: Double(i) * 1.7,
-                                       count: sat.starCount,
-                                       sizeScale: 0.85,
-                                       rotationSpeed: 0,
-                                       alphaScale: bloomFade)
-                        }
-
-                        // Settled spark glow — breathing amber bead once the
-                        // satellite has arrived. No travelling spark so there's
-                        // no isolated dot floating across the screen mid-flight.
-                        if progress >= 1 {
-                            drawSettledSparkGlow(in: ctx,
-                                                 at: CGPoint(x: satX, y: satY),
-                                                 phase: Double(i),
-                                                 t: elapsed)
-                        }
+                        drawSphere(in: ctx,
+                                   cx: cx,
+                                   cy: cy,
+                                   r: coreRadius * backgroundBreath,
+                                   t: elapsed,
+                                   count: centralStarCount,
+                                   sizeScale: 1.0,
+                                   rotationSpeed: 0.025)
                     }
                 }
             }
         }
         .accessibilityLabel("Creating your content")
+    }
+
+    private func drawSatellites(in ctx: GraphicsContext, size: CGSize, elapsed: Double) {
+        let cx = size.width / 2
+        let cy = size.height / 2
+        let coreRadius = min(size.width, size.height) * 0.20
+
+        for (i, sat) in satellites.enumerated() {
+            let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
+            guard progress > 0 else { continue }
+            let eased = smoothstep(progress)
+
+            // Distance to screen edge in this satellite's direction, then
+            // travel edgeFraction of that across all device aspect ratios.
+            let ca = abs(cos(sat.angle)), sa = abs(sin(sat.angle))
+            let distToEdge = ca < 1e-9 ? cy
+                           : sa < 1e-9 ? cx
+                           : min(cx / ca, cy / sa)
+            let satDistance = distToEdge * sat.edgeFraction
+            let satX = cx + cos(sat.angle) * satDistance * eased
+            let satY = cy + sin(sat.angle) * satDistance * eased
+
+            // Connector links the central cloud to the peripheral cloud while
+            // keeping clear of the central dot mass.
+            if progress > connectorStartProgress {
+                let lineAlpha = smoothstep((progress - connectorStartProgress) / (1 - connectorStartProgress))
+                let startX = cx + cos(sat.angle) * coreRadius * 1.22
+                let startY = cy + sin(sat.angle) * coreRadius * 1.22
+                let satEdge = coreRadius * sat.sizeFactor * 0.9
+                let endX = satX - cos(sat.angle) * satEdge
+                let endY = satY - sin(sat.angle) * satEdge
+                var line = Path()
+                line.move(to: CGPoint(x: startX, y: startY))
+                line.addLine(to: CGPoint(x: endX, y: endY))
+                ctx.stroke(
+                    line,
+                    with: .color(amber.opacity(0.24 * lineAlpha)),
+                    style: StrokeStyle(
+                        lineWidth: 1.35,
+                        lineCap: .round,
+                        dash: [0.01, 4]
+                    )
+                )
+            }
+
+            // Peripheral clouds keep the earlier growing behavior; central
+            // cloud stability comes from rendering it in the static layer.
+            if progress > satelliteBloomStartProgress {
+                let bloom = smoothstep((progress - satelliteBloomStartProgress) / (1 - satelliteBloomStartProgress))
+                let bloomFade = min(1.0, bloom / 0.25)
+                drawSphere(in: ctx,
+                           cx: satX, cy: satY,
+                           r: coreRadius * sat.sizeFactor * bloom,
+                           t: Double(i) * 1.7,
+                           count: sat.starCount,
+                           sizeScale: 0.85,
+                           rotationSpeed: 0,
+                           alphaScale: bloomFade)
+            }
+
+            // Settled spark glow — breathing amber bead once the satellite has
+            // arrived. No travelling spark, so no isolated dot crosses the screen.
+            if progress >= 1 {
+                drawSettledSparkGlow(in: ctx,
+                                     at: CGPoint(x: satX, y: satY),
+                                     phase: Double(i),
+                                     t: elapsed)
+            }
+        }
     }
 
     /// Volumetric-feeling sphere of stars rendered into a 2D canvas via a
