@@ -1394,30 +1394,7 @@ private struct GeneratingCloudScene: View {
                     let cx = size.width / 2
                     let cy = size.height / 2
 
-                    // On the constellation step the cloud "condenses" from a
-                    // screen-filling scatter into its resting footprint over
-                    // the first 0.80s of elapsed time. The 4×→1× ease is
-                    // driven here inside the canvas — NOT with a SwiftUI
-                    // .scale() transition modifier — so the condensation is
-                    // synchronised with every canvas redraw and there is no
-                    // frame-rate fight between the 30 fps TimelineView and
-                    // the 60 fps compositor interpolation.
-                    //
-                    // generationStartedAt = step-change time + 0.45 s, so
-                    // elapsed is 0 for the first 0.45 s of real time. During
-                    // that window the cloud is fading in (opacity transition)
-                    // at full scatter radius; once elapsed turns positive the
-                    // scatter shrinks to the normal 0.20 × minDim over 0.80 s.
-                    // Condensation finishes at elapsed ≈ 0.80 s (real time
-                    // ≈ 1.25 s), well before the first satellite connector
-                    // appears at elapsed ≈ 1.61 s — no overlap.
-                    let condenseDuration = 0.80
-                    let condenseRaw = showsContentGraph
-                        ? min(1.0, elapsed / condenseDuration)
-                        : 1.0
-                    let condenseEased = condenseRaw * condenseRaw * (3 - 2 * condenseRaw)
                     let coreRadius = min(size.width, size.height) * 0.20
-                        * (4.0 - 3.0 * condenseEased) // 4× → 1×
 
                     // The constellation beat keeps the central cloud visually
                     // stable while satellites form. Capture-background mode
