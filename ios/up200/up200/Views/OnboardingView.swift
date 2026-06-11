@@ -60,7 +60,6 @@ struct OnboardingView: View {
     // are kept as a backing store for the on-screen text so SwiftUI only
     // invalidates that subtree when the second actually rolls over.
     @State private var recordingStartedAt: Date = .distantPast
-    @State private var recordingPauseStart: Date? = nil
     @State private var specifyStartedAt: Date = .distantPast
     @State private var showCaptureMicAlert: Bool = false
     @State private var chosenContentLabel: String = ""
@@ -171,13 +170,10 @@ struct OnboardingView: View {
                     })
                     .allowsHitTesting(capturePhase == .prompt)
                     .animation(.easeIn(duration: 0.85), value: step)
-                    // Quick converge-and-vanish on recording start. The
-                    // center circle draws the same starfield, so any long
-                    // overlap between the two reads as a double exposure —
-                    // the background must be gone before the circle is
-                    // fully visible (the circle's insertion is delayed to
-                    // sequence after this fade; see captureCenter).
-                    .animation(.easeInOut(duration: 0.32), value: capturePhase)
+                    // Quick converge-and-vanish on recording start. Bezier
+                    // deceleration so the contraction reads as particles
+                    // gathering inward rather than cutting off.
+                    .animation(.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 0.52), value: capturePhase)
                     .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
@@ -685,7 +681,7 @@ struct OnboardingView: View {
             // after the long-press fires). The "Listening…" label tells
             // the user the engine is spinning up so they don't start
             // speaking into a deaf microphone during the gap.
-            let isLive = captureRecorder.isRecording || captureRecorder.isPaused
+            let isLive = captureRecorder.isRecording
             VStack(spacing: 18) {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
@@ -698,54 +694,21 @@ struct OnboardingView: View {
                         .fill(Color.white.opacity(0.5))
                         .frame(width: 7, height: 7)
                     Text(isLive
-                         ? (captureRecorder.isPaused
-                            ? "Paused  \(formatCaptureTime(recordingSeconds))"
-                            : "Recording  \(formatCaptureTime(recordingSeconds))")
+                         ? "Recording  \(formatCaptureTime(recordingSeconds))"
                          : "Listening\u{2026}")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(Color.white.opacity(0.55))
                         .contentTransition(.opacity)
                         .animation(.easeIn(duration: 0.35), value: isLive)
                 }
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    if captureRecorder.isPaused {
-                        if let start = recordingPauseStart {
-                            recordingStartedAt = recordingStartedAt.addingTimeInterval(Date().timeIntervalSince(start))
-                            recordingPauseStart = nil
-                        }
-                        captureRecorder.resume()
-                    } else {
-                        recordingPauseStart = Date()
-                        captureRecorder.pause()
-                    }
-                } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: captureRecorder.isPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(captureRecorder.isPaused ? "Resume" : "Pause")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(Color.white.opacity(0.62))
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.055))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .opacity(isLive ? 1 : 0)
-                .padding(.top, 2)
             }
-            // Sequenced after the background field's converge-and-fade
-            // (0.32s): the circle starts appearing as the field finishes
-            // vanishing and settles from 1.18× — gather inward, then the
-            // circle forms. Running both at once double-exposed the two
-            // copies of the same starfield.
+            // Delayed until the background field has begun its bezier
+            // contraction (0.52s total). The circle scales in from 1.18×
+            // so it reads as the particles condensing into the ring.
             .transition(.asymmetric(
                 insertion: .scale(scale: 1.18)
                     .combined(with: .opacity)
-                    .animation(.easeOut(duration: 0.35).delay(0.22)),
+                    .animation(.timingCurve(0.0, 0.0, 0.2, 1.0, duration: 0.42).delay(0.28)),
                 removal: .opacity
             ))
 
@@ -952,7 +915,6 @@ struct OnboardingView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         recordingSeconds = 0
         recordingStartedAt = Date()
-        recordingPauseStart = nil
         withAnimation(.easeOut(duration: 0.30)) {
             capturePhase = .recording
         }
