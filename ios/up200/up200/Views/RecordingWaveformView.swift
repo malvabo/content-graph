@@ -2,11 +2,32 @@ import SwiftUI
 
 // MARK: - Shared recording waveform
 
+private final class RecordingWaveformEnvelope: ObservableObject {
+    private(set) var level: Double = 0
+    private(set) var rotation: Double = 0
+    private var lastDate: Date?
+
+    func sample(_ target: Double, at date: Date) -> RecordingWaveformEnvelope {
+        let previous = lastDate ?? date
+        let dt = max(0, min(0.12, date.timeIntervalSince(previous)))
+        lastDate = date
+
+        let timeConstant = target > level ? 0.18 : 1.35
+        let blend = timeConstant <= 0 ? 1 : 1 - exp(-dt / timeConstant)
+        level += (target - level) * blend
+
+        let speed = 0.003 + level * 0.024
+        rotation += dt * speed
+        return self
+    }
+}
+
 /// Full-circle starfield. Particles drift calmly by default; speech only makes
 /// them move a little faster and turn more opaque.
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
 
+    @StateObject private var envelope = RecordingWaveformEnvelope()
     @State private var startedAt = Date()
 
     private let starCount = 160
@@ -17,19 +38,20 @@ struct RecordingWaveformView: View {
             let t = max(0, context.date.timeIntervalSince(startedAt))
             let level = max(0.0, Double(audioLevel()))
             let rawLevel = max(0.0, level - 0.003)
-            let audio = min(1.0, pow(rawLevel * 9.0, 0.72))
+            let targetAudio = min(1.0, pow(rawLevel * 9.0, 0.72))
+            let audio = envelope.sample(targetAudio, at: context.date).level
+            let rotation = envelope.rotation
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
                 let sphereR = min(cx, cy) - 18
-                let rotation = t * 0.017
 
                 for i in 0..<starCount {
                     let n = Double(i) + 0.5
                     let phi = acos(1 - 2 * n / Double(starCount))
                     let theta = goldenAngle * Double(i) + rotation
                     let jitter = 0.80 + prng(i * 3) * 0.20
-                    let breath = 1.0 + sin(t * 0.08 + Double(i) * 0.23) * 0.004
+                    let breath = 1.0 + sin(t * 0.08 + Double(i) * 0.23) * (0.002 + audio * 0.004)
                     let r = sphereR * jitter * breath
                     let x3 = r * sin(phi) * cos(theta)
                     let z3 = r * sin(phi) * sin(theta)
@@ -42,7 +64,7 @@ struct RecordingWaveformView: View {
 
                     let sensitivity = 0.75 + prng(i * 5 + 1) * 0.75
                     let audioLift = min(1.0, audio * sensitivity)
-                    let alpha = min(0.90, (0.16 + prng(i * 7) * 0.22) * perspective + audioLift * 0.50)
+                    let alpha = min(0.92, (0.14 + prng(i * 7) * 0.20) * perspective + audioLift * 0.62)
                     let radius = (1.20 + prng(i * 11) * 2.20) * perspective
 
                     ctx.fill(
