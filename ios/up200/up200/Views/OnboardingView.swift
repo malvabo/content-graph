@@ -467,62 +467,83 @@ struct OnboardingView: View {
     /// central cloud becomes the full-screen press-and-hold surface, then
     /// dims behind recording and choose states so the visual thread stays
     /// continuous instead of swapping to a separate background.
-    @ViewBuilder private var captureOverlay: some View {
-        if capturePhase == .recording {
-            ActiveRecordingPageView(audioLevel: { captureRecorder.audioLevel },
-                                    timeLabel: formatCaptureTime(recordingSeconds),
-                                    showsAmberGlow: false,
-                                    title: {
-                Text("Let's capture\nyour first idea")
-                    .font(.lora(size: 22, weight: .medium))
-                    .kerning(-0.3)
-                    .foregroundColor(AppText.primary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
-            }, bottom: {
-                Button(action: finishCaptureRecording) {
-                    Text("Finish recording")
-                        .font(.app(size: 17, weight: .semibold))
-                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color.white.opacity(0.94))
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            })
-            .transition(.opacity.combined(with: .scale(scale: 0.95)))
-        } else {
-            VStack(spacing: 0) {
-            Spacer().frame(height: 24)
-
-            captureHeadline
-                .padding(.vertical, 10)
-                .padding(.horizontal, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.black.opacity(0.40))
-                        .blur(radius: 20)
-                )
-                .padding(.horizontal, 28)
-                .padding(.top, 12)
-
-            Spacer(minLength: 24)
-
-            captureCenter
-                // Reserve the waveform circle height even during .prompt so
-                // the layout doesn't reflow (and shift all surrounding
-                // elements) when the waveform fades in on recording start.
-                .frame(minHeight: UIScreen.main.bounds.width * 2 / 3)
-                .padding(.horizontal, 24)
-
-            Spacer(minLength: 24)
-
-            captureBottom
-                .padding(.horizontal, 28)
-
-            Spacer().frame(height: 52)
+    /// The single recording screen for both onboarding recording phases
+    /// (.recording and .specify). Renders the shared ActiveRecordingPageView —
+    /// the same component the home Voice Note screen uses — so onboarding and
+    /// home cannot diverge. Amber glow is off here to suit the dark capture scene.
+    @ViewBuilder
+    private func captureRecordingPage(title: String,
+                                      timeLabel: String,
+                                      onFinish: @escaping () -> Void) -> some View {
+        ActiveRecordingPageView(audioLevel: { captureRecorder.audioLevel },
+                                timeLabel: timeLabel,
+                                showsAmberGlow: false,
+                                title: {
+            Text(title)
+                .font(.lora(size: 22, weight: .medium))
+                .kerning(-0.3)
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+        }, bottom: {
+            Button(action: onFinish) {
+                Text("Finish recording")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.white.opacity(0.94))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
+            .buttonStyle(.plain)
+        })
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+    }
+
+    @ViewBuilder private var captureOverlay: some View {
+        Group {
+            switch capturePhase {
+            case .recording:
+                captureRecordingPage(title: "Let's capture\nyour first idea",
+                                     timeLabel: formatCaptureTime(recordingSeconds),
+                                     onFinish: finishCaptureRecording)
+            case .specify:
+                captureRecordingPage(title: "What do you want to\u{2026}?",
+                                     timeLabel: formatCaptureTime(specifySeconds),
+                                     onFinish: finishSpecifyRecording)
+            default:
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 24)
+
+                    captureHeadline
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.black.opacity(0.40))
+                                .blur(radius: 20)
+                        )
+                        .padding(.horizontal, 28)
+                        .padding(.top, 12)
+
+                    Spacer(minLength: 24)
+
+                    captureCenter
+                        // Reserve the waveform circle height even during .prompt
+                        // so the layout doesn't reflow (and shift all surrounding
+                        // elements) when the waveform fades in on recording start.
+                        .frame(minHeight: UIScreen.main.bounds.width * 2 / 3)
+                        .padding(.horizontal, 24)
+
+                    Spacer(minLength: 24)
+
+                    captureBottom
+                        .padding(.horizontal, 28)
+
+                    Spacer().frame(height: 52)
+                }
+            }
+        }
         // During .prompt the entire overlay is decorative — the only
         // interactive element is the full-screen cloud behind
         // it, which owns the press-and-hold gesture. Without this
@@ -599,12 +620,6 @@ struct OnboardingView: View {
             generatingTask = nil
             firstIdeaSnapshotTask?.cancel()
             firstIdeaSnapshotTask = nil
-        }
-        // Drop the user straight onto the per-note detail page the app uses
-        // for every note — a "Note" tab plus a tab for the generation just
-        // produced. When they dismiss it, fall through to onGetStarted so
-        // onboarding exits: they've now seen both the create flow and the
-        // notes-and-generations surface they'll live in.
         }
     }
 
