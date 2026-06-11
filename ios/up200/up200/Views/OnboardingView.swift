@@ -1374,7 +1374,7 @@ private struct GeneratingCloudScene: View {
     // edgeFraction targets 65–72% of the distance to the nearest screen
     // edge in each satellite's direction.
     private let satellites: [Satellite] = [
-        Satellite(delay: 0.45, angle: -2.30,   // upper-left
+        Satellite(delay: 0.12, angle: -2.30,   // upper-left
                   edgeFraction: 0.68, sizeFactor: 0.70, starCount: 22),
         Satellite(delay: 1.10, angle: -0.85,   // upper-right
                   edgeFraction: 0.72, sizeFactor: 0.60, starCount: 18),
@@ -1468,20 +1468,20 @@ private struct GeneratingCloudScene: View {
                 line.addLine(to: CGPoint(x: endX, y: endY))
                 ctx.stroke(
                     line,
-                    with: .color(amber.opacity(0.14 * lineAlpha)),
+                    with: .color(amber.opacity(0.12 * lineAlpha)),
                     style: StrokeStyle(
-                        lineWidth: 4.0,
+                        lineWidth: 2.0,
                         lineCap: .round,
-                        dash: [0.01, 5]
+                        dash: [0.01, 4.5]
                     )
                 )
                 ctx.stroke(
                     line,
-                    with: .color(amber.opacity(0.42 * lineAlpha)),
+                    with: .color(amber.opacity(0.50 * lineAlpha)),
                     style: StrokeStyle(
-                        lineWidth: 2.0,
+                        lineWidth: 0.85,
                         lineCap: .round,
-                        dash: [0.01, 5]
+                        dash: [0.01, 4.5]
                     )
                 )
             }
