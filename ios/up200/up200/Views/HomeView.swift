@@ -659,8 +659,8 @@ final class VoiceRecorder: ObservableObject {
                 if let result {
                     self.transcript = result.bestTranscription.formattedString
                 }
-                if (error != nil || (result?.isFinal ?? false)), self.isRecording {
-                    self.stop()
+                if error != nil, self.isRecording {
+                    self.startupError = "Speech recognition paused. Audio capture is still running."
                 }
             }
         }

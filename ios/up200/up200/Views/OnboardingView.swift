@@ -886,13 +886,7 @@ struct OnboardingView: View {
         withAnimation(.easeOut(duration: 0.14)) {
             capturePhase = .recording
         }
-        Task { @MainActor in
-            // Let SwiftUI commit the touch-down morph before mic/session
-            // startup does any work on the main actor.
-            await Task.yield()
-            guard capturePhase == .recording else { return }
-            captureRecorder.start()
-        }
+        captureRecorder.start()
     }
 
     private func finishCaptureRecording() {
@@ -940,11 +934,7 @@ struct OnboardingView: View {
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .specify
         }
-        Task { @MainActor in
-            await Task.yield()
-            guard capturePhase == .specify else { return }
-            captureRecorder.start()
-        }
+        captureRecorder.start()
     }
 
     private func finishSpecifyRecording() {
