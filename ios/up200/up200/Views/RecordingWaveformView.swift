@@ -2,8 +2,8 @@ import SwiftUI
 
 // MARK: - Shared recording waveform
 
-/// Full-circle starfield. Speech does not scatter the particles; it only lets
-/// them brighten into slow white blooms and drift a little more awake.
+/// Full-circle starfield. Particles drift calmly by default; speech only makes
+/// them move a little faster and turn more opaque.
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
 
@@ -14,7 +14,7 @@ struct RecordingWaveformView: View {
             let t = context.date.timeIntervalSinceReferenceDate
             let level = max(0.0, Double(audioLevel()))
             let rawLevel = max(0.0, level - 0.003)
-            let audio = min(1.0, pow(rawLevel * 18.0, 0.58))
+            let audio = min(1.0, pow(rawLevel * 14.0, 0.62))
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
@@ -25,34 +25,18 @@ struct RecordingWaveformView: View {
                     let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 18)
                     let ra    = prng(i * 3 + 2)
 
-                    let speed = 0.07 + audio * 0.18
+                    let speed = 0.07 + audio * 0.08
                     let phase = t * speed + Double(i) * 0.41
-                    let drift = 1.2 + audio * 3.6
-                    let radialBreath = sin(t * (0.10 + ra * 0.05) + Double(i) * 0.23) * (0.45 + audio * 1.7)
+                    let drift = 1.6 + audio * 1.15
+                    let radialBreath = sin(t * (0.10 + ra * 0.045) + Double(i) * 0.23) * (0.55 + audio * 0.45)
                     let r = baseR + radialBreath
                     let x = cx + r * cos(angle) + sin(phase) * drift
                     let y = cy + r * sin(angle) + cos(phase * 1.19) * drift * 0.78
 
-                    let glowHz = 0.12 + prng(i * 7 + 3) * 0.22
-                    let glowWave = (sin(t * glowHz + Double(i) * 1.73) + 1.0) / 2.0
-                    let glow = pow(glowWave, 2.4)
-
                     let sensitivity = 0.65 + prng(i * 5 + 1) * 1.05
-                    let ignition = min(1.0, glow * audio * sensitivity * 1.75)
-
-                    let alpha = min(0.98, (0.10 + ra * 0.12) + ignition * 0.82)
-                    let glowAlpha = ignition * (0.22 + ra * 0.16)
-
-                    let radius = (1.35 + ra * 2.15) * (1.0 + ignition * 0.42)
-
-                    if glowAlpha > 0.01 {
-                        let glowRadius = radius * (2.4 + ignition * 1.7)
-                        ctx.fill(
-                            Path(ellipseIn: CGRect(x: x - glowRadius, y: y - glowRadius,
-                                                   width: glowRadius * 2, height: glowRadius * 2)),
-                            with: .color(Color.white.opacity(glowAlpha))
-                        )
-                    }
+                    let audioLift = min(1.0, audio * sensitivity)
+                    let alpha = min(0.88, (0.12 + ra * 0.14) + audioLift * 0.46)
+                    let radius = 1.35 + ra * 2.15
 
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
