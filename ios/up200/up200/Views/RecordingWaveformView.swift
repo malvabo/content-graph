@@ -2,10 +2,11 @@ import SwiftUI
 
 // MARK: - Shared recording waveform
 
-/// Full-circle starfield of white glowing particles matching the onboarding
-/// constellation screen. Audio level gently scales radius and brightness.
+/// Full-circle starfield of white glowing particles. Audio level gently scales
+/// radius and brightness; active particles warm toward amber when speaking.
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
+    var isPaused: Bool = false
 
     private let starCount = 160
 
@@ -38,12 +39,22 @@ struct RecordingWaveformView: View {
 
                     let pulse = 0.75 + 0.25 * sin(t * 1.6 + Double(i) * 0.31)
                     let radius = (2.0 + ra * 3.2) * (1.0 + amplified * 0.45)
-                    let alpha = min(1.0, (0.55 + ra * 0.45) * pulse * (1.0 + amplified * 0.35))
+
+                    let pauseDim = isPaused ? 0.4 : 1.0
+                    let alpha = min(1.0, (0.55 + ra * 0.45) * pulse * (1.0 + amplified * 0.35) * pauseDim)
+
+                    // Particles warm from white toward soft amber as audio level rises
+                    let warmth = amplified * 0.55
+                    let particleColor = Color(
+                        red: 1.0,
+                        green: 1.0 - warmth * 0.28,
+                        blue: 1.0 - warmth * 0.60
+                    ).opacity(alpha)
 
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
                                                width: radius * 2, height: radius * 2)),
-                        with: .color(.white.opacity(alpha))
+                        with: .color(particleColor)
                     )
                 }
             }
