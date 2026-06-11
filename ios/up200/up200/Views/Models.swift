@@ -1159,10 +1159,6 @@ final class RecordingController: ObservableObject {
         task = nil
         startupError = nil
         guard let rec = recognizer, isRecording || isPaused else { return }
-        guard rec.supportsOnDeviceRecognition else {
-            startupError = "On-device speech recognition isn't available for this language."
-            return
-        }
         // Cap restarts so a hard SR failure doesn't spin forever.
         guard srRestartCount < 20 else {
             startupError = "Speech recognition became unavailable. Tap Stop to save."
@@ -1171,12 +1167,28 @@ final class RecordingController: ObservableObject {
         srRestartCount += 1
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        req.requiresOnDeviceRecognition = true
+        // Do NOT force on-device recognition. `supportsOnDeviceRecognition`
+        // can report true while the language asset is still missing or
+        // downloading, in which case a request with
+        // `requiresOnDeviceRecognition = true` errors out the instant it
+        // starts. The error handler then restarts immediately, burning the
+        // 20-restart budget in a fraction of a second and surfacing
+        // "Speech recognition became unavailable" with no transcript — or, on
+        // a device that limps along on-device, producing no usable result at
+        // all. Leaving this false lets the system fall back to the server
+        // recogniser, which reliably returns partial and final transcripts.
+        req.requiresOnDeviceRecognition = false
         sharedRequest.value = req  // tap closure routes new buffers here immediately
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
                 guard let self, self.isRecording || self.isPaused else { return }
-                if let result { self.transcript = result.bestTranscription.formattedString }
+                if let result {
+                    self.transcript = result.bestTranscription.formattedString
+                    // A real result means the recogniser is healthy — clear the
+                    // restart budget so a long working session, or an isolated
+                    // hiccup after good audio, never trips the cap.
+                    self.srRestartCount = 0
+                }
                 if result?.isFinal == true {
                     // Normal session-limit end — accumulate and restart.
                     self.accumulated = self.fullTranscript
@@ -1186,10 +1198,24 @@ final class RecordingController: ObservableObject {
                     // Only restart on real errors while the engine is running.
                     // When paused, the error is always the cancellation from
                     // teardownEngine() — restarting on a stopped engine would
-                    // exhaust srRestartCount before the user resumes.
-                    self.restartSpeechRecognition()
+                    // exhaust srRestartCount before the user resumes. Back off
+                    // briefly so a persistent failure decays the budget over
+                    // seconds instead of milliseconds.
+                    self.scheduleRestartAfterError()
                 }
             }
+        }
+    }
+
+    /// Restart the recogniser a short beat after a failure. A persistent SR
+    /// error otherwise restarts synchronously on the main queue and exhausts
+    /// `srRestartCount` almost instantly; the delay lets a transient condition
+    /// (asset warm-up, brief route change) clear and spreads the 20-restart
+    /// budget across several seconds.
+    private func scheduleRestartAfterError() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.isRecording else { return }
+            self.restartSpeechRecognition()
         }
     }
 

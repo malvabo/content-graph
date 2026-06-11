@@ -646,12 +646,15 @@ final class VoiceRecorder: ObservableObject {
             startupError = "Speech recognition isn't available on this device."
             return
         }
-        guard rec.supportsOnDeviceRecognition else {
-            startupError = "On-device speech recognition isn't available for this language."
-            return
-        }
         request.shouldReportPartialResults = true
-        request.requiresOnDeviceRecognition = true
+        // Do NOT force on-device recognition, and don't abort the whole capture
+        // when on-device isn't available. `supportsOnDeviceRecognition` can
+        // report true while the language asset is missing/downloading; the old
+        // hard guard returned before the audio engine ever started, so the
+        // homepage showed no recording, no animation, and no transcript.
+        // Leaving this false lets the system fall back to the server
+        // recogniser, which reliably returns partial and final results.
+        request.requiresOnDeviceRecognition = false
 
         recognitionTask = rec.recognitionTask(with: request) { [weak self] result, error in
             DispatchQueue.main.async {
