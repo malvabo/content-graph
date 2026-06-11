@@ -954,7 +954,9 @@ final class RecordingController: ObservableObject {
     func resumeIfSystemPaused() {
         guard isPaused, pausedBySystem else { return }
         pausedBySystem = false
-        resume()
+        isPaused = false
+        startTimer()
+        requestAuthAndStart()
     }
 
     private func reset() {
