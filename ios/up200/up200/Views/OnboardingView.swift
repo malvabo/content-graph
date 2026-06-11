@@ -1376,11 +1376,11 @@ private struct GeneratingCloudScene: View {
     private let satellites: [Satellite] = [
         Satellite(delay: 0.45, angle: -2.30,   // upper-left
                   edgeFraction: 0.68, sizeFactor: 0.70, starCount: 22),
-        Satellite(delay: 1.55, angle: -0.85,   // upper-right
+        Satellite(delay: 1.10, angle: -0.85,   // upper-right
                   edgeFraction: 0.72, sizeFactor: 0.60, starCount: 18),
-        Satellite(delay: 2.65, angle:  0.55,   // right-lower
+        Satellite(delay: 2.05, angle:  0.55,   // right-lower
                   edgeFraction: 0.68, sizeFactor: 0.65, starCount: 20),
-        Satellite(delay: 3.75, angle:  2.30,   // left-lower
+        Satellite(delay: 3.00, angle:  2.30,   // left-lower
                   edgeFraction: 0.65, sizeFactor: 0.55, starCount: 16),
     ]
 
