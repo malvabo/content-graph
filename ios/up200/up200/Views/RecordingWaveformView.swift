@@ -76,6 +76,9 @@ struct RecordingWaveformView: View {
                 let targetDiameter = collapsedDiameter ?? min(size.width, size.height) * 2 / 3
                 let collapsedRadius = targetDiameter / 2
                 let collapsedCenter = CGPoint(x: cx, y: cy + collapsedCenterYOffset)
+                let individualMotionAmount = individualParticleMotion
+                    ? (collapseStartedAt == nil ? 1.0 : collapseProgress)
+                    : 0.0
 
                 if collapseProgress > 0.02 {
                     let discOpacity = min(0.06, collapseProgress * 0.06)
@@ -100,15 +103,15 @@ struct RecordingWaveformView: View {
                     let seedC = prng(i * 23 + 11) * Double.pi * 2
 
                     let individualLift = 1.0 + audio * 0.50
-                    let thetaDrift = individualParticleMotion
-                        ? sin(driftTime * (0.34 + prng(i * 29) * 0.16) * individualLift + seedA) * 0.18
-                        : 0
-                    let phiDrift = individualParticleMotion
-                        ? sin(driftTime * (0.26 + prng(i * 31) * 0.13) * individualLift + seedB) * 0.11
-                        : 0
-                    let radialDrift = individualParticleMotion
-                        ? sin(driftTime * (0.20 + prng(i * 37) * 0.10) * individualLift + seedC) * 0.055
-                        : sin(t * 0.08 + Double(i) * 0.23) * (0.002 + audio * 0.004)
+                    let thetaDrift = sin(driftTime * (0.34 + prng(i * 29) * 0.16) * individualLift + seedA)
+                        * 0.18
+                        * individualMotionAmount
+                    let phiDrift = sin(driftTime * (0.26 + prng(i * 31) * 0.13) * individualLift + seedB)
+                        * 0.11
+                        * individualMotionAmount
+                    let settledRadialDrift = sin(driftTime * (0.20 + prng(i * 37) * 0.10) * individualLift + seedC) * 0.055
+                    let fieldRadialDrift = sin(t * 0.08 + Double(i) * 0.23) * (0.002 + audio * 0.004)
+                    let radialDrift = fieldRadialDrift + (settledRadialDrift - fieldRadialDrift) * individualMotionAmount
 
                     let phi = max(0.04, min(Double.pi - 0.04, basePhi + phiDrift))
                     let theta = baseTheta + thetaDrift
@@ -126,13 +129,15 @@ struct RecordingWaveformView: View {
                     var collapsedX = collapsedCenter.x + x3 * collapsedScale * (0.86 + 0.14 * perspective)
                     var collapsedY = collapsedCenter.y + y3 * collapsedScale * (0.86 + 0.14 * perspective)
 
-                    if individualParticleMotion {
+                    if individualMotionAmount > 0 {
                         let orbit = (1.8 + prng(i * 41 + 5) * 4.8) * (0.75 + audio * 0.55)
                         let localT = driftTime * (0.55 + prng(i * 43 + 9) * 0.35)
-                        x += cos(localT + seedA) * orbit
-                        y += sin(localT * (0.82 + prng(i * 47 + 13) * 0.18) + seedB) * orbit
-                        collapsedX += cos(localT + seedA) * orbit
-                        collapsedY += sin(localT * (0.82 + prng(i * 47 + 13) * 0.18) + seedB) * orbit
+                        let orbitX = cos(localT + seedA) * orbit * individualMotionAmount
+                        let orbitY = sin(localT * (0.82 + prng(i * 47 + 13) * 0.18) + seedB) * orbit * individualMotionAmount
+                        x += orbitX
+                        y += orbitY
+                        collapsedX += orbitX
+                        collapsedY += orbitY
                     }
 
                     if collapseProgress > 0 {
