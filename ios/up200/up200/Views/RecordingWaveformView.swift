@@ -44,7 +44,7 @@ struct RecordingWaveformView: View {
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
-                let sphereR = min(cx, cy) - 18
+                let sphereR = min(cx, cy) - 3
 
                 for i in 0..<starCount {
                     let n = Double(i) + 0.5
