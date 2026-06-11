@@ -10,6 +10,7 @@ struct Up200App: App {
     // Keychain on a background thread after the first frame renders, preventing
     // SecItemCopyMatching from blocking the UI thread on cold launch.
     @State private var needsSetup = false
+    @State private var enterLocalHomeThisRun = false
 
     private var colorScheme: ColorScheme {
         darkModeEnabled ? .dark : .light
@@ -18,7 +19,7 @@ struct Up200App: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if !onboardingComplete && !localHomeEnabled {
+                if !onboardingComplete && !localHomeEnabled && !enterLocalHomeThisRun {
                     OnboardingView {
                         withAnimation(.easeOut(duration: 0.4)) {
                             onboardingComplete = true
@@ -74,6 +75,13 @@ struct Up200App: App {
                 applyInterfaceStyle()
                 Task { await SyncManager.shared.setup() }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .enterLocalHome)) { _ in
+                withAnimation(.easeOut(duration: 0.4)) {
+                    enterLocalHomeThisRun = true
+                    onboardingComplete = true
+                    localHomeEnabled = true
+                }
+            }
             .onChange(of: darkModeEnabled) { _, _ in applyInterfaceStyle() }
         }
     }
@@ -87,4 +95,8 @@ struct Up200App: App {
             }
         }
     }
+}
+
+extension Notification.Name {
+    static let enterLocalHome = Notification.Name("EnterLocalHome")
 }

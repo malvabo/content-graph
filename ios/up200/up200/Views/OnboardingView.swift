@@ -957,6 +957,7 @@ struct OnboardingView: View {
             await Self.applyNoteTitle(noteID: note.id, transcript: transcript)
         }
         UserDefaults.standard.set(true, forKey: "local_home_enabled")
+        NotificationCenter.default.post(name: .enterLocalHome, object: nil)
         onGetStarted()
     }
 
