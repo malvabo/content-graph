@@ -121,7 +121,16 @@ struct OnboardingView: View {
                     // intro fade and the cloud contraction crossed paths at
                     // different points in the timeline and read as two
                     // unrelated motions.
-                    .transition(.opacity)
+                    //
+                    // Removal contracts the whole universe toward screen
+                    // center while fading, so the intro starfield reads as
+                    // condensing INTO the constellation step's central cloud
+                    // (whose footprint is ~0.35 of the screen) rather than
+                    // crossfading to an unrelated cloud that pops in.
+                    .transition(.asymmetric(
+                        insertion: .opacity,
+                        removal: .scale(scale: 0.35).combined(with: .opacity)
+                    ))
             }
 
             // Constellation step: sphere cloud with satellites.
@@ -131,7 +140,17 @@ struct OnboardingView: View {
                                      showsContentGraph: true)
                     .ignoresSafeArea()
                     .animation(.easeIn(duration: 0.85), value: step)
-                    .transition(.asymmetric(insertion: .opacity, removal: .opacity))
+                    // Insertion settles from slightly larger to final size,
+                    // continuing the intro universe's inward contraction so
+                    // the two scenes read as one condensing motion. Satellites
+                    // only start blooming after this 0.85s transition ends
+                    // (constellationStartedAt is offset +0.45s), so the scale
+                    // never touches them. Removal stays a plain fade — the
+                    // dive has its own crossfade into the capture starfield.
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 1.45).combined(with: .opacity),
+                        removal: .opacity
+                    ))
             }
 
             // Capture step: full-screen starfield of small particles — no
