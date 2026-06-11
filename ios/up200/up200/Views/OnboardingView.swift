@@ -1467,11 +1467,20 @@ private struct GeneratingCloudScene: View {
                 line.addLine(to: CGPoint(x: endX, y: endY))
                 ctx.stroke(
                     line,
-                    with: .color(amber.opacity(0.24 * lineAlpha)),
+                    with: .color(amber.opacity(0.14 * lineAlpha)),
                     style: StrokeStyle(
-                        lineWidth: 1.35,
+                        lineWidth: 4.0,
                         lineCap: .round,
-                        dash: [0.01, 4]
+                        dash: [0.01, 5]
+                    )
+                )
+                ctx.stroke(
+                    line,
+                    with: .color(amber.opacity(0.42 * lineAlpha)),
+                    style: StrokeStyle(
+                        lineWidth: 2.0,
+                        lineCap: .round,
+                        dash: [0.01, 5]
                     )
                 )
             }
