@@ -958,6 +958,7 @@ struct OnboardingView: View {
         Task.detached(priority: .utility) {
             await Self.applyNoteTitle(noteID: note.id, transcript: transcript)
         }
+        UserDefaults.standard.set(true, forKey: "local_home_enabled")
         onGetStarted()
     }
 

@@ -1576,6 +1576,7 @@ struct ProfileView: View {
         UserDefaults.standard.removeObject(forKey: "note_removed_deprecated_tags_v1")
         UserDefaults.standard.removeObject(forKey: DeletedNoteTombstones.key)
         UserDefaults.standard.removeObject(forKey: DeletedGenTombstones.key)
+        UserDefaults.standard.removeObject(forKey: "local_home_enabled")
         refreshAPIKeyState()
         onboardingComplete = false
     }
