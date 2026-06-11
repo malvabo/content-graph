@@ -122,15 +122,13 @@ struct OnboardingView: View {
                     // different points in the timeline and read as two
                     // unrelated motions.
                     //
-                    // Removal contracts the whole universe toward screen
-                    // center while fading, so the intro starfield reads as
-                    // condensing INTO the constellation step's central cloud
-                    // (whose footprint is ~0.35 of the screen) rather than
-                    // crossfading to an unrelated cloud that pops in.
-                    .transition(.asymmetric(
-                        insertion: .opacity,
-                        removal: .scale(scale: 0.35).combined(with: .opacity)
-                    ))
+                    // Removal is a plain fade. Scaling the SCNView down was
+                    // tried for a "universe condenses into the cloud" effect,
+                    // but the scene embeds text chips (PRODUCT IDEA et al.)
+                    // that shrank into a garbled clump at screen center. The
+                    // condensation is expressed by the cloud scene's insertion
+                    // scale instead — see the constellation branch below.
+                    .transition(.opacity)
             }
 
             // Constellation step: sphere cloud with satellites.
@@ -140,15 +138,19 @@ struct OnboardingView: View {
                                      showsContentGraph: true)
                     .ignoresSafeArea()
                     .animation(.easeIn(duration: 0.85), value: step)
-                    // Insertion settles from slightly larger to final size,
-                    // continuing the intro universe's inward contraction so
-                    // the two scenes read as one condensing motion. Satellites
-                    // only start blooming after this 0.85s transition ends
-                    // (constellationStartedAt is offset +0.45s), so the scale
-                    // never touches them. Removal stays a plain fade — the
-                    // dive has its own crossfade into the capture starfield.
+                    // Insertion starts at 2.4× — the cloud's 96 dots spread
+                    // across the full screen width, indistinguishable from a
+                    // sparse universe — and condenses to final size while the
+                    // intro starfield fades underneath. One inward motion,
+                    // carried entirely by this Canvas (the SCNView is never
+                    // transformed, so its embedded text chips stay put).
+                    // Satellites only start blooming after this 0.85s
+                    // transition ends (constellationStartedAt is offset
+                    // +0.45s), so the scale never touches them. Removal stays
+                    // a plain fade — the dive has its own crossfade into the
+                    // capture starfield.
                     .transition(.asymmetric(
-                        insertion: .scale(scale: 1.45).combined(with: .opacity),
+                        insertion: .scale(scale: 2.4).combined(with: .opacity),
                         removal: .opacity
                     ))
             }
@@ -168,7 +170,13 @@ struct OnboardingView: View {
                     })
                     .allowsHitTesting(capturePhase == .prompt)
                     .animation(.easeIn(duration: 0.85), value: step)
-                    .animation(.easeInOut(duration: 0.45), value: capturePhase)
+                    // Quick converge-and-vanish on recording start. The
+                    // center circle draws the same starfield, so any long
+                    // overlap between the two reads as a double exposure —
+                    // the background must be gone before the circle is
+                    // fully visible (the circle's insertion is delayed to
+                    // sequence after this fade; see captureCenter).
+                    .animation(.easeInOut(duration: 0.32), value: capturePhase)
                     .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
@@ -652,8 +660,20 @@ struct OnboardingView: View {
             // to the cloud behind it.
             Text("Press and hold to start recording\nyour first idea")
                 .font(.system(.subheadline, design: .rounded))
-                .foregroundColor(Color.white.opacity(0.62))
+                .foregroundColor(Color.white.opacity(0.92))
                 .multilineTextAlignment(.center)
+                .shadow(color: .black.opacity(0.85), radius: 3)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 18)
+                // Same blurred scrim treatment as captureHeadline — the
+                // caption sits on top of the full-brightness starfield, so
+                // without a backdrop the particles render straight through
+                // the glyphs and the line is unreadable.
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.black.opacity(0.55))
+                        .blur(radius: 14)
+                )
                 .frame(maxWidth: .infinity)
                 .allowsHitTesting(false)
                 .transition(.opacity)
@@ -685,7 +705,17 @@ struct OnboardingView: View {
                         .animation(.easeIn(duration: 0.35), value: isLive)
                 }
             }
-            .transition(.opacity)
+            // Sequenced after the background field's converge-and-fade
+            // (0.32s): the circle starts appearing as the field finishes
+            // vanishing and settles from 1.18× — gather inward, then the
+            // circle forms. Running both at once double-exposed the two
+            // copies of the same starfield.
+            .transition(.asymmetric(
+                insertion: .scale(scale: 1.18)
+                    .combined(with: .opacity)
+                    .animation(.easeOut(duration: 0.35).delay(0.22)),
+                removal: .opacity
+            ))
 
         case .choose:
             chooseCirclesField
