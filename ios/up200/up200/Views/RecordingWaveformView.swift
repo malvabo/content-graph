@@ -79,8 +79,15 @@ struct RecordingWaveformView: View {
 
                     let depth = (z3 + sphereR) / (2 * sphereR)
                     let perspective = 0.62 + depth * 0.50
-                    let x = cx + x3 * (0.86 + 0.14 * perspective)
-                    let y = cy + y3 * (0.86 + 0.14 * perspective)
+                    var x = cx + x3 * (0.86 + 0.14 * perspective)
+                    var y = cy + y3 * (0.86 + 0.14 * perspective)
+
+                    if individualParticleMotion {
+                        let orbit = (1.8 + prng(i * 41 + 5) * 4.8) * (0.75 + audio * 0.55)
+                        let localT = driftTime * (0.55 + prng(i * 43 + 9) * 0.35)
+                        x += cos(localT + seedA) * orbit
+                        y += sin(localT * (0.82 + prng(i * 47 + 13) * 0.18) + seedB) * orbit
+                    }
 
                     let sensitivity = 0.75 + prng(i * 5 + 1) * 0.75
                     let audioLift = min(1.0, audio * sensitivity)
