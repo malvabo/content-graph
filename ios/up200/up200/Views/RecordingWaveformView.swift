@@ -16,7 +16,7 @@ private final class RecordingWaveformEnvelope: ObservableObject {
         let blend = timeConstant <= 0 ? 1 : 1 - exp(-dt / timeConstant)
         level += (target - level) * blend
 
-        let speed = 0.003 + level * 0.024
+        let speed = 0.003 + level * 0.040
         rotation += dt * speed
         return self
     }
