@@ -1466,7 +1466,7 @@ struct VoiceRecordSheet: View {
                 // Waveform or mic button
                 if recorder.isRecording {
                     let orbitSize = UIScreen.main.bounds.width * 2 / 3
-                    RecordingWaveformView(audioLevel: { recorder.audioLevel })
+                    RecordingWaveformView(audioLevel: { recorder.audioLevel }, individualParticleMotion: true)
                         .frame(width: orbitSize, height: orbitSize)
                         .background(Color.white.opacity(0.09))
                         .clipShape(Circle())
@@ -1474,7 +1474,7 @@ struct VoiceRecordSheet: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else if !recorder.transcript.isEmpty {
                     let orbitSize = UIScreen.main.bounds.width * 2 / 3
-                    RecordingWaveformView(audioLevel: { recorder.audioLevel })
+                    RecordingWaveformView(audioLevel: { recorder.audioLevel }, individualParticleMotion: true)
                         .frame(width: orbitSize, height: orbitSize)
                         .background(Color.white.opacity(0.09))
                         .clipShape(Circle())

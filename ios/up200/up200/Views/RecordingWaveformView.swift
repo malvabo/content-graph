@@ -26,6 +26,7 @@ private final class RecordingWaveformEnvelope: ObservableObject {
 /// them move a little faster and turn more opaque.
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
+    var individualParticleMotion = false
 
     @StateObject private var envelope = RecordingWaveformEnvelope()
     @State private var startedAt = Date()
@@ -46,14 +47,32 @@ struct RecordingWaveformView: View {
                 let cy = size.height / 2
                 let sphereR = min(cx, cy) - 3
 
+                let driftTime = t * (0.78 + audio * 0.22)
+
                 for i in 0..<starCount {
                     let n = Double(i) + 0.5
-                    let phi = acos(1 - 2 * n / Double(starCount))
-                    let theta = goldenAngle * Double(i) + rotation
+                    let basePhi = acos(1 - 2 * n / Double(starCount))
+                    let baseTheta = goldenAngle * Double(i) + rotation
                     let fill = pow(prng(i * 13 + 2), 0.58)
+                    let seedA = prng(i * 17 + 3) * Double.pi * 2
+                    let seedB = prng(i * 19 + 7) * Double.pi * 2
+                    let seedC = prng(i * 23 + 11) * Double.pi * 2
+
+                    let individualLift = 1.0 + audio * 0.32
+                    let thetaDrift = individualParticleMotion
+                        ? sin(driftTime * (0.18 + prng(i * 29) * 0.08) * individualLift + seedA) * 0.085
+                        : 0
+                    let phiDrift = individualParticleMotion
+                        ? sin(driftTime * (0.14 + prng(i * 31) * 0.07) * individualLift + seedB) * 0.052
+                        : 0
+                    let radialDrift = individualParticleMotion
+                        ? sin(driftTime * (0.11 + prng(i * 37) * 0.06) * individualLift + seedC) * 0.028
+                        : sin(t * 0.08 + Double(i) * 0.23) * (0.002 + audio * 0.004)
+
+                    let phi = max(0.04, min(Double.pi - 0.04, basePhi + phiDrift))
+                    let theta = baseTheta + thetaDrift
                     let jitter = 0.12 + fill * 0.88
-                    let breath = 1.0 + sin(t * 0.08 + Double(i) * 0.23) * (0.002 + audio * 0.004)
-                    let r = sphereR * jitter * breath
+                    let r = sphereR * jitter * (1.0 + radialDrift)
                     let x3 = r * sin(phi) * cos(theta)
                     let z3 = r * sin(phi) * sin(theta)
                     let y3 = r * cos(phi)
