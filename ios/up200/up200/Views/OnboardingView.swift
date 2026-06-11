@@ -675,7 +675,6 @@ struct OnboardingView: View {
             // after the long-press fires). The "Listening…" label tells
             // the user the engine is spinning up so they don't start
             // speaking into a deaf microphone during the gap.
-            let isLive = captureRecorder.isRecording
             VStack(spacing: 18) {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
@@ -687,13 +686,9 @@ struct OnboardingView: View {
                     Circle()
                         .fill(Color.white.opacity(0.5))
                         .frame(width: 7, height: 7)
-                    Text(isLive
-                         ? "Recording  \(formatCaptureTime(recordingSeconds))"
-                         : "Listening\u{2026}")
+                    Text(formatCaptureTime(recordingSeconds))
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(Color.white.opacity(0.55))
-                        .contentTransition(.opacity)
-                        .animation(.easeIn(duration: 0.35), value: isLive)
                 }
             }
             // Delayed until the background field has begun its bezier
@@ -714,7 +709,6 @@ struct OnboardingView: View {
                 .transition(.opacity)
 
         case .specify:
-            let isLive = captureRecorder.isRecording
             VStack(spacing: 18) {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
@@ -726,9 +720,7 @@ struct OnboardingView: View {
                     Circle()
                         .fill(Color.white.opacity(0.5))
                         .frame(width: 7, height: 7)
-                    Text(isLive
-                         ? "Recording  \(formatCaptureTime(specifySeconds))"
-                         : "Listening\u{2026}")
+                    Text(formatCaptureTime(specifySeconds))
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(Color.white.opacity(0.55))
                 }

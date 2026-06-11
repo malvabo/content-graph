@@ -508,7 +508,6 @@ struct GenerationBanner: View {
 final class VoiceRecorder: ObservableObject {
     @Published var transcript = ""
     @Published var isRecording = false
-    @Published var isPaused = false
     @Published var permissionDenied = false
     @Published var startupError: String? = nil
     var audioLevel: Float = 0.0  // plain var — read inside TimelineView, not @Published
@@ -560,24 +559,6 @@ final class VoiceRecorder: ObservableObject {
 
     func stop() {
         teardown()
-    }
-
-    func pause() {
-        guard isRecording, !isPaused else { return }
-        audioEngine.pause()
-        isRecording = false
-        isPaused = true
-    }
-
-    func resume() {
-        guard isPaused else { return }
-        do {
-            try audioEngine.start()
-            isRecording = true
-            isPaused = false
-        } catch {
-            teardown()
-        }
     }
 
     private func teardown(releaseOwnership: Bool = true) {

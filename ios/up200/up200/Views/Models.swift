@@ -898,22 +898,6 @@ final class RecordingController: ObservableObject {
         requestAuthAndStart()
     }
 
-    func pause() {
-        guard isRecording, !isPaused else { return }
-        accumulated = fullTranscript
-        transcript = ""
-        teardownEngine()
-        stopTimer()
-        isPaused = true
-    }
-
-    func resume() {
-        guard isPaused else { return }
-        isPaused = false
-        startTimer()
-        requestAuthAndStart()
-    }
-
     /// Stop recording and route the transcript to the registered save handler.
     func finish() {
         let final = fullTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
