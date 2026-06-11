@@ -155,7 +155,6 @@ struct OnboardingView: View {
             if step == .capture && captureCloudVisible {
                 RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
                     .ignoresSafeArea()
-                    .scaleEffect(captureCloudScale)
                     .opacity(captureCloudOpacity)
                     .contentShape(Rectangle())
                     .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
@@ -164,10 +163,7 @@ struct OnboardingView: View {
                     })
                     .allowsHitTesting(capturePhase == .prompt)
                     .animation(.easeIn(duration: 0.85), value: step)
-                    // Quick converge-and-vanish on recording start. Bezier
-                    // deceleration so the contraction reads as particles
-                    // gathering inward rather than cutting off.
-                    .animation(.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 0.52), value: capturePhase)
+                    .animation(.easeOut(duration: 0.45), value: capturePhase)
                     .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
@@ -216,19 +212,6 @@ struct OnboardingView: View {
             0.56
         case .generating:
             0
-        }
-    }
-
-    /// While recording, the full-screen field contracts toward the center
-    /// circle as it fades, so the particles read as gathering into the
-    /// circle rather than simply disappearing. 2/3 matches the circle's
-    /// diameter relative to the field's screen-width diameter.
-    private var captureCloudScale: Double {
-        switch capturePhase {
-        case .recording, .specify:
-            2.0 / 3.0
-        case .prompt, .choose, .generating:
-            1.0
         }
     }
 
@@ -691,13 +674,13 @@ struct OnboardingView: View {
                         .foregroundColor(Color.white.opacity(0.55))
                 }
             }
-            // Delayed until the background field has begun its bezier
-            // contraction (0.52s total). The circle scales in from 1.18×
-            // so it reads as the particles condensing into the ring.
+            // Circle fades in simultaneously with the background field
+            // fading out — no delay, no gap. The subtle scale settle
+            // (1.06→1.0) gives the circle a sense of weight arriving.
             .transition(.asymmetric(
-                insertion: .scale(scale: 1.18)
+                insertion: .scale(scale: 1.06)
                     .combined(with: .opacity)
-                    .animation(.timingCurve(0.0, 0.0, 0.2, 1.0, duration: 0.42).delay(0.28)),
+                    .animation(.easeOut(duration: 0.40)),
                 removal: .opacity
             ))
 
