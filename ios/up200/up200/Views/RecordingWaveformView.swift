@@ -8,36 +8,40 @@ struct RecordingWaveformView: View {
     let audioLevel: () -> Float
 
     private let starCount = 160
+    private let goldenAngle = Double.pi * (1 + sqrt(5.0))
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = max(0.0, Double(audioLevel()))
             let rawLevel = max(0.0, level - 0.003)
-            let audio = min(1.0, pow(rawLevel * 10.0, 0.70))
+            let audio = min(1.0, pow(rawLevel * 9.0, 0.72))
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
-                let maxR = min(cx, cy)
+                let sphereR = min(cx, cy) - 18
+                let rotation = t * (0.018 + audio * 0.010)
 
                 for i in 0..<starCount {
-                    let baseAngle = prng(i * 3    ) * 2 * .pi
-                    let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 18)
-                    let ra    = prng(i * 3 + 2)
+                    let n = Double(i) + 0.5
+                    let phi = acos(1 - 2 * n / Double(starCount))
+                    let theta = goldenAngle * Double(i) + rotation
+                    let jitter = 0.80 + prng(i * 3) * 0.20
+                    let breath = 1.0 + sin(t * 0.12 + Double(i) * 0.23) * 0.006
+                    let r = sphereR * jitter * breath
+                    let x3 = r * sin(phi) * cos(theta)
+                    let z3 = r * sin(phi) * sin(theta)
+                    let y3 = r * cos(phi)
 
-                    let orbitSpeed = 0.0045 + ra * 0.0025 + audio * 0.0035
-                    let angle = baseAngle + t * orbitSpeed
-                    let phase = t * (0.035 + ra * 0.012 + audio * 0.008) + Double(i) * 0.41
-                    let radialBreath = sin(phase) * (0.42 + audio * 0.18)
-                    let r = baseR + radialBreath
-                    let drift = 0.38 + audio * 0.18
-                    let x = cx + r * cos(angle) + sin(phase * 0.9) * drift
-                    let y = cy + r * sin(angle) + cos(phase * 1.1) * drift
+                    let depth = (z3 + sphereR) / (2 * sphereR)
+                    let perspective = 0.62 + depth * 0.50
+                    let x = cx + x3 * (0.86 + 0.14 * perspective)
+                    let y = cy + y3 * (0.86 + 0.14 * perspective)
 
-                    let sensitivity = 0.65 + prng(i * 5 + 1) * 1.05
+                    let sensitivity = 0.75 + prng(i * 5 + 1) * 0.75
                     let audioLift = min(1.0, audio * sensitivity)
-                    let alpha = min(0.80, (0.11 + ra * 0.13) + audioLift * 0.42)
-                    let radius = 1.35 + ra * 2.15
+                    let alpha = min(0.82, (0.10 + prng(i * 7) * 0.18) * perspective + audioLift * 0.42)
+                    let radius = (1.20 + prng(i * 11) * 2.20) * perspective
 
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
