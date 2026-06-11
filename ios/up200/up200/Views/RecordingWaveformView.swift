@@ -118,19 +118,26 @@ struct RecordingCloudView: View {
     var isDimmed = false
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 18) {
             let orbitSize = UIScreen.main.bounds.width * 2 / 3
             RecordingWaveformView(audioLevel: audioLevel, individualParticleMotion: true)
                 .frame(width: orbitSize, height: orbitSize)
-                .background(Color.white.opacity(0.09))
+                .background(Color.white.opacity(0.05))
                 .clipShape(Circle())
-                .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
                 .opacity(isDimmed ? 0.3 : 1)
 
-            Text(timeLabel)
-                .font(.system(.title2, design: .monospaced))
-                .fontWeight(.medium)
-                .foregroundColor(AppInk.solid(0.70))
+            // Particles float on near-black — no filled disc, no ring. The
+            // timer is a small dot + mm:ss. This is the canonical recording
+            // cloud; every recording surface renders it.
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color.white.opacity(0.5))
+                    .frame(width: 7, height: 7)
+                Text(timeLabel)
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .foregroundColor(Color.white.opacity(0.55))
+            }
+            .opacity(isDimmed ? 0.3 : 1)
         }
     }
 }
