@@ -124,37 +124,32 @@ struct OnboardingView: View {
                     .transition(.opacity)
             }
 
-            if step == .constellation || (step == .capture && captureCloudVisible) {
-                let isCaptureBackground = step == .capture
+            // Constellation step: sphere cloud with satellites.
+            if step == .constellation {
                 GeneratingCloudScene(generationStartedAt: constellationStartedAt,
                                      frozenAt: diveStartedAt,
-                                     showsContentGraph: !isCaptureBackground)
+                                     showsContentGraph: true)
                     .ignoresSafeArea()
-                    .scaleEffect(isCaptureBackground ? 3.5 : 1)
-                    .opacity(isCaptureBackground ? captureCloudOpacity : 1)
+                    .animation(.easeIn(duration: 0.85), value: step)
+                    .transition(.asymmetric(insertion: .opacity, removal: .opacity))
+            }
+
+            // Capture step: full-screen starfield of small particles — no
+            // circular clip, no sphere boundary. Crossfades in as the
+            // constellation cloud crossfades out during the dive.
+            if step == .capture && captureCloudVisible {
+                RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
+                    .ignoresSafeArea()
+                    .opacity(captureCloudOpacity)
                     .contentShape(Rectangle())
                     .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
                         guard capturePhase == .prompt else { return }
                         startCaptureRecording()
                     })
-                    .allowsHitTesting(step == .capture && capturePhase == .prompt)
+                    .allowsHitTesting(capturePhase == .prompt)
                     .animation(.easeIn(duration: 0.85), value: step)
                     .animation(.easeInOut(duration: 0.45), value: capturePhase)
-                    // Insertion (.intro → .constellation): fade only. Scaling
-                    // the dense central dot field down during phone screen
-                    // recording causes subpixel aliasing that reads as random
-                    // trembling while the cloud settles into place.
-                    //
-                    // Removal (.constellation → .capture): the cluster
-                    // is no longer removed. It enlarges and dims in place,
-                    // becoming the capture-step background instead of sitting
-                    // over a separate starfield layer.
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity,
-                            removal: .opacity
-                        )
-                    )
+                    .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
             switch step {
@@ -193,7 +188,7 @@ struct OnboardingView: View {
     private var captureCloudOpacity: Double {
         switch capturePhase {
         case .prompt:
-            0.65
+            1.0
         case .recording, .specify:
             0.12
         case .choose:
