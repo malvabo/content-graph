@@ -2,20 +2,18 @@ import SwiftUI
 
 // MARK: - Shared recording waveform
 
-/// Full-circle starfield. Each particle has its own slow glow cycle; audio
-/// gives particles permission to ignite during their natural upswing, producing
-/// a rolling, organic bloom rather than a simultaneous flash.
+/// Full-circle starfield. Speech does not scatter the particles; it only lets
+/// them brighten into slow white blooms and drift a little more awake.
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
 
     private let starCount = 160
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
-            // Soft audio presence: gentle lift so quiet rooms show nothing,
-            // normal speech lands around 0.6–0.8.
-            let audio = min(1.0, Double(audioLevel()) * 2.4)
+            let rawLevel = max(0.0, Double(audioLevel()) - 0.025)
+            let audio = min(1.0, pow(rawLevel * 3.0, 0.72))
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
@@ -26,40 +24,39 @@ struct RecordingWaveformView: View {
                     let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 18)
                     let ra    = prng(i * 3 + 2)
 
-                    // Very gentle drift — particles barely float in place
-                    let speed = 0.14 + audio * 0.03
+                    let speed = 0.055 + audio * 0.045
                     let phase = t * speed + Double(i) * 0.41
-                    let x = cx + baseR * cos(angle) + sin(phase)        * 3.5
-                    let y = cy + baseR * sin(angle) + cos(phase * 1.27) * 2.5
+                    let drift = 1.8 + audio * 1.4
+                    let radialBreath = sin(t * (0.075 + ra * 0.035) + Double(i) * 0.23) * (0.7 + audio * 1.1)
+                    let r = baseR + radialBreath
+                    let x = cx + r * cos(angle) + sin(phase) * drift
+                    let y = cy + r * sin(angle) + cos(phase * 1.19) * drift * 0.78
 
-                    // Per-particle glow cycle — slow (3–8 s period), staggered
-                    // so no two particles sync. glow is zero half the time,
-                    // creating natural gaps between ignitions.
-                    let glowHz    = 0.12 + prng(i * 7 + 3) * 0.18   // 0.12–0.30 Hz
-                    let glow      = max(0.0, sin(t * glowHz + Double(i) * 1.73))
+                    let glowHz = 0.055 + prng(i * 7 + 3) * 0.085
+                    let glowWave = (sin(t * glowHz + Double(i) * 1.73) + 1.0) / 2.0
+                    let glow = pow(glowWave, 3.2)
 
-                    // Ignition = glow opportunity × audio × particle sensitivity.
-                    // All three must be nonzero; sensitivity variance (0.4–2.4)
-                    // means some particles respond to a whisper, others need
-                    // louder speech — an organic, staggered lighting pattern.
-                    let sensitivity = 0.4 + prng(i * 5 + 1) * 2.0
-                    let ignition    = min(1.0, glow * audio * sensitivity)
+                    let sensitivity = 0.65 + prng(i * 5 + 1) * 1.05
+                    let ignition = min(1.0, glow * audio * sensitivity)
 
-                    // Alpha: dim at rest (distant stars), selected ones bloom
-                    let alpha  = min(0.80, (0.12 + ra * 0.16) + ignition * 0.56)
+                    let alpha = min(0.96, (0.11 + ra * 0.13) + ignition * 0.74)
+                    let glowAlpha = ignition * (0.16 + ra * 0.10)
 
-                    // Size: gentle bloom — 20% growth at full ignition
-                    let radius = (1.4 + ra * 2.4) * (1.0 + ignition * 0.20)
+                    let radius = (1.35 + ra * 2.15) * (1.0 + ignition * 0.16)
 
-                    // Color: pure white. Barely-perceptible warmth (< 2%) only
-                    // at peak ignition — adds depth without an orange cast.
-                    let w = ignition * 0.08
+                    if glowAlpha > 0.01 {
+                        let glowRadius = radius * (2.4 + ignition * 1.7)
+                        ctx.fill(
+                            Path(ellipseIn: CGRect(x: x - glowRadius, y: y - glowRadius,
+                                                   width: glowRadius * 2, height: glowRadius * 2)),
+                            with: .color(Color.white.opacity(glowAlpha))
+                        )
+                    }
+
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
                                                width: radius * 2, height: radius * 2)),
-                        with: .color(Color(red: 1.0,
-                                          green: 1.0 - w * 0.20,
-                                          blue:  1.0 - w * 0.50).opacity(alpha))
+                        with: .color(Color.white.opacity(alpha))
                     )
                 }
             }
