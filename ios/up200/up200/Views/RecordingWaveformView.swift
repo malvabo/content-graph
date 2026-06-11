@@ -7,12 +7,14 @@ import SwiftUI
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
 
+    @State private var startedAt = Date()
+
     private let starCount = 160
     private let goldenAngle = Double.pi * (1 + sqrt(5.0))
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
+            let t = max(0, context.date.timeIntervalSince(startedAt))
             let level = max(0.0, Double(audioLevel()))
             let rawLevel = max(0.0, level - 0.003)
             let audio = min(1.0, pow(rawLevel * 9.0, 0.72))
@@ -20,14 +22,14 @@ struct RecordingWaveformView: View {
                 let cx = size.width / 2
                 let cy = size.height / 2
                 let sphereR = min(cx, cy) - 18
-                let rotation = t * (0.018 + audio * 0.010)
+                let rotation = t * 0.012
 
                 for i in 0..<starCount {
                     let n = Double(i) + 0.5
                     let phi = acos(1 - 2 * n / Double(starCount))
                     let theta = goldenAngle * Double(i) + rotation
                     let jitter = 0.80 + prng(i * 3) * 0.20
-                    let breath = 1.0 + sin(t * 0.12 + Double(i) * 0.23) * 0.006
+                    let breath = 1.0 + sin(t * 0.08 + Double(i) * 0.23) * 0.004
                     let r = sphereR * jitter * breath
                     let x3 = r * sin(phi) * cos(theta)
                     let z3 = r * sin(phi) * sin(theta)
