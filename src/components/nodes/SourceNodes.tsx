@@ -3,6 +3,158 @@ import { createPortal } from 'react-dom';
 import { useGraphStore } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { generateSourceTitle } from '../../utils/sourceUtils';
+import { useSettingsStore } from '../../store/settingsStore';
+import { transcribeWithGroq } from '../../lib/groqTranscribe';
+
+// ─── Speech input helpers (voice-to-text as keyboard alternative) ─────────────
+
+function pickMimeTypeForSpeech(): string | undefined {
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+  const MR: any = (window as any).MediaRecorder;
+  if (!MR?.isTypeSupported) return undefined;
+  return types.find(t => MR.isTypeSupported(t));
+}
+
+function SpeechRecordingOverlay({ startTime, onStop, onCancel, stream }: {
+  startTime: number;
+  onStop: () => void;
+  onCancel: () => void;
+  stream: MediaStream | null;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const audioLevelRef = useRef(0);
+
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+  useEffect(() => {
+    const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
+    return () => clearInterval(iv);
+  }, [startTime]);
+
+  useEffect(() => {
+    if (!stream) return;
+    let audioCtx: AudioContext | undefined;
+    let raf: number;
+    try {
+      audioCtx = new AudioContext();
+      audioCtx.resume().catch(() => {});
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        audioLevelRef.current = data.reduce((a, b) => a + b, 0) / (data.length * 255);
+        raf = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch {}
+    return () => { cancelAnimationFrame(raf); audioCtx?.close(); audioLevelRef.current = 0; };
+  }, [stream]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    const POSITIONS = 100, LAYERS = 6;
+    let t = 0, raf: number;
+    const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+    const resize = () => {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * devicePixelRatio;
+      canvas.height = r.height * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    const draw = () => {
+      const r = canvas.getBoundingClientRect();
+      const w = r.width, h = r.height, cy = h / 2;
+      ctx.fillStyle = '#0d0e16';
+      ctx.fillRect(0, 0, w, h);
+      const level = audioLevelRef.current;
+      const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
+      const amplitude = amplified * cy * 0.42;
+      ctx.fillStyle = '#f6b93b';
+      for (let layer = 0; layer < LAYERS; layer++) {
+        for (let i = 0; i < POSITIONS; i++) {
+          const idx = layer * POSITIONS + i;
+          const progress = i / (POSITIONS - 1);
+          const r1 = pseudoRandom(idx), r2 = pseudoRandom(idx + 500), r3 = pseudoRandom(idx + 1000);
+          const phaseOffset = (layer / LAYERS) + r1 * (1 / LAYERS);
+          const phase = (t * 0.2 + phaseOffset) % 1.0;
+          const wave1 = Math.sin(progress * Math.PI * 3.0 + t * 0.9) * amplitude;
+          const wave2 = Math.sin(progress * Math.PI * 5.0 + t * 1.3 + 1.1) * amplitude * 0.28;
+          const waveY = cy + wave1 + wave2;
+          const side = r2 < 0.5 ? -1 : 1;
+          const travelDist = 30 + r3 * 58;
+          const distFrac = Math.abs(phase - 0.5) * 2;
+          const easedDist = distFrac * distFrac;
+          const yOffset = side * travelDist * easedDist;
+          const proximity = 1 - distFrac;
+          const sizeP = Math.max(0.2, (0.4 + proximity * 3.8) * (0.5 + r3 * 0.8) * (1 + amplified * 0.5));
+          const alpha = proximity * proximity * (0.75 + r1 * 0.22);
+          const envelope = Math.sin(progress * Math.PI);
+          const finalAlpha = alpha * envelope;
+          if (finalAlpha < 0.015) continue;
+          ctx.globalAlpha = finalAlpha;
+          ctx.beginPath();
+          ctx.arc(w * progress, waveY + yOffset, sizeP, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+      t += 0.011;
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
+  const mm = String(Math.floor(elapsed / 60000)).padStart(2, '0');
+  const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
+
+  return createPortal(
+    <div className="fixed inset-0 z-[10000] flex items-end md:items-center justify-center"
+      style={{ background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms' }}>
+      <div className="flex flex-col w-full overflow-hidden rounded-t-[16px] md:rounded-[16px]"
+        style={{ maxWidth: 480, minHeight: 320, maxHeight: '80vh', background: '#0d0e16', boxShadow: '0 16px 48px rgba(0,0,0,0.4)', transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'transform 150ms ease', position: 'relative' }}>
+        <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: 'inherit' }} />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px 32px', gap: 14 }}>
+          <div style={{ fontSize: 48, fontWeight: 300, fontFamily: 'var(--font-sans)', color: '#fff', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'rgba(246,185,59,0.8)' }}>Recording — speak your text</div>
+          <button onClick={onStop} aria-label="Stop recording"
+            style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'rgba(246,185,59,1)', color: '#0d0e16', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(246,185,59,0.4)', marginTop: 8 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          </button>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.35)' }}>Tap to stop</div>
+          <button onClick={onCancel}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'rgba(255,255,255,0.35)', padding: '4px 8px' }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function SpeechTranscribingOverlay() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+  return createPortal(
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center"
+      style={{ background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms' }}>
+      <div style={{ background: 'var(--color-bg-card)', borderRadius: 20, padding: '36px 40px', boxShadow: '0 16px 48px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid var(--color-border-subtle)', borderTopColor: '#f6b93b', animation: 'speech-spin 0.8s linear infinite' }} />
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>Transcribing…</div>
+        <style>{`@keyframes speech-spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 // ─── Shared popover shell (portal, closes on Escape or backdrop click) ───────
 
@@ -137,6 +289,130 @@ function TextSourcePopover({ initialText, onSave, onClose }: {
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; start: number; end: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const groqKey = useSettingsStore(s => s.groqKey);
+  const [speechRecording, setSpeechRecording] = useState(false);
+  const [speechTranscribing, setSpeechTranscribing] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const speechMediaRef = useRef<MediaStream | null>(null);
+  const speechRecorderRef = useRef<MediaRecorder | null>(null);
+  const speechChunksRef = useRef<BlobPart[]>([]);
+  const speechRecogRef = useRef<any>(null);
+  const speechShouldRestartRef = useRef(false);
+  const speechFinalRef = useRef('');
+  const speechInterimRef = useRef('');
+  const speechStartTimeRef = useRef(0);
+  const groqKeyRef = useRef(groqKey);
+  useEffect(() => { groqKeyRef.current = groqKey; }, [groqKey]);
+
+  const startSpeech = useCallback(async () => {
+    setSpeechError(null);
+    speechFinalRef.current = '';
+    speechInterimRef.current = '';
+    speechChunksRef.current = [];
+    const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (SR) {
+      try {
+        const recog = new SR();
+        recog.continuous = true;
+        recog.interimResults = true;
+        recog.lang = navigator.language || 'en-US';
+        recog.onresult = (e: any) => {
+          let interim = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const t = e.results[i][0].transcript;
+            if (e.results[i].isFinal) speechFinalRef.current += t + ' ';
+            else interim += t;
+          }
+          speechInterimRef.current = interim;
+        };
+        recog.onerror = (e: any) => {
+          if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+            setSpeechError('Microphone blocked. Check browser permissions.');
+            speechShouldRestartRef.current = false;
+          }
+        };
+        recog.onend = () => { if (speechShouldRestartRef.current) { try { recog.start(); } catch {} } };
+        speechShouldRestartRef.current = true;
+        recog.start();
+        speechRecogRef.current = recog;
+      } catch { speechShouldRestartRef.current = false; }
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      speechMediaRef.current = stream;
+      const mime = pickMimeTypeForSpeech();
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const localChunks: BlobPart[] = [];
+      speechChunksRef.current = localChunks;
+      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) localChunks.push(e.data); };
+      mr.start(1000);
+      speechRecorderRef.current = mr;
+    } catch {
+      speechShouldRestartRef.current = false;
+      try { speechRecogRef.current?.stop(); } catch {}
+      speechRecogRef.current = null;
+      setSpeechError('Microphone access denied. Check browser permissions.');
+      return;
+    }
+    speechStartTimeRef.current = Date.now();
+    setSpeechRecording(true);
+  }, []);
+
+  const stopSpeech = useCallback(async () => {
+    speechShouldRestartRef.current = false;
+    try { speechRecogRef.current?.stop(); } catch {}
+    speechRecogRef.current = null;
+    const mr = speechRecorderRef.current;
+    if (mr && mr.state !== 'inactive') {
+      await new Promise<void>(resolve => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        const timer = setTimeout(finish, 2000);
+        mr.addEventListener('stop', () => { clearTimeout(timer); finish(); }, { once: true });
+        try { mr.stop(); } catch { clearTimeout(timer); finish(); }
+      });
+    }
+    speechRecorderRef.current = null;
+    speechMediaRef.current?.getTracks().forEach(t => t.stop());
+    speechMediaRef.current = null;
+    let transcript = [speechFinalRef.current.trim(), speechInterimRef.current.trim()].filter(Boolean).join(' ').trim();
+    const recordedChunks = speechChunksRef.current;
+    speechChunksRef.current = [];
+    const mimeType = (recordedChunks[0] as Blob | undefined)?.type || 'audio/webm';
+    const blob = recordedChunks.length ? new Blob(recordedChunks, { type: mimeType }) : null;
+    setSpeechRecording(false);
+    if (!transcript && blob && blob.size > 0 && groqKeyRef.current) {
+      setSpeechTranscribing(true);
+      try {
+        transcript = await transcribeWithGroq(blob, groqKeyRef.current);
+      } catch (err: any) {
+        setSpeechError(`Transcription failed: ${err?.message || 'unknown error'}`);
+        setSpeechTranscribing(false);
+        return;
+      }
+      setSpeechTranscribing(false);
+    } else if (!transcript) {
+      setSpeechError(!groqKeyRef.current
+        ? 'No transcript captured. Add a Groq API key in Settings for Whisper transcription.'
+        : 'No audio captured.');
+      return;
+    }
+    setText(prev => prev ? prev + '\n\n' + transcript : transcript);
+  }, []);
+
+  const cancelSpeech = useCallback(() => {
+    speechShouldRestartRef.current = false;
+    try { speechRecogRef.current?.stop(); } catch {}
+    speechRecogRef.current = null;
+    const mr = speechRecorderRef.current;
+    if (mr && mr.state !== 'inactive') { try { mr.stop(); } catch {} }
+    speechRecorderRef.current = null;
+    speechMediaRef.current?.getTracks().forEach(t => t.stop());
+    speechMediaRef.current = null;
+    speechChunksRef.current = [];
+    setSpeechRecording(false);
+  }, []);
+
   const charCount = text.length;
   const charColor = charCount > 50000 ? 'var(--color-danger)' : charCount > 40000 ? 'var(--p-amber-600)' : 'var(--color-text-placeholder)';
 
@@ -169,6 +445,15 @@ function TextSourcePopover({ initialText, onSave, onClose }: {
 
   return (
     <SourcePopoverShell onClose={onClose}>
+      {speechRecording && (
+        <SpeechRecordingOverlay
+          startTime={speechStartTimeRef.current}
+          onStop={stopSpeech}
+          onCancel={cancelSpeech}
+          stream={speechMediaRef.current}
+        />
+      )}
+      {speechTranscribing && <SpeechTranscribingOverlay />}
       <div
         onMouseDown={(e) => e.stopPropagation()}
         style={{
@@ -184,12 +469,27 @@ function TextSourcePopover({ initialText, onSave, onClose }: {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '1px solid var(--color-border-subtle)', flexShrink: 0 }}>
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>Write a text</span>
-          <button
-            onClick={onClose}
-            style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={startSpeech}
+              title="Speak instead of typing"
+              aria-label="Start voice input"
+              style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'none', border: '1px solid var(--color-border-default)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="2" width="6" height="11" rx="3" />
+                <path d="M5 10a7 7 0 0 0 14 0" />
+                <path d="M12 17v4" />
+                <path d="M8 21h8" />
+              </svg>
+            </button>
+            <button
+              onClick={onClose}
+              style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
         </div>
 
         {/* Textarea area */}
@@ -215,6 +515,11 @@ function TextSourcePopover({ initialText, onSave, onClose }: {
           <div style={{ textAlign: 'right', fontSize: 'var(--text-sm)', color: charColor, marginTop: 6, flexShrink: 0 }}>
             {charCount.toLocaleString()} / 50,000
           </div>
+          {speechError && (
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 4 }}>
+              {speechError}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
